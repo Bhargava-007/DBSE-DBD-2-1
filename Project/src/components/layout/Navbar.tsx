@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useJudge } from '../../context/JudgeContext';
 import type { ActivePage } from '../../context/JudgeContext';
 import { 
+  Home,
   Code2, 
   Trophy, 
   Radio, 
@@ -31,6 +32,7 @@ export const Navbar: React.FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const navItems: { id: ActivePage; label: string; icon: React.ReactNode }[] = [
+    { id: 'home', label: 'Home', icon: <Home className="w-3.5 h-3.5" /> },
     { id: 'problems', label: 'Problems', icon: <Code2 className="w-3.5 h-3.5" /> },
     { id: 'contests', label: 'Contests', icon: <Trophy className="w-3.5 h-3.5" /> },
     { id: 'leaderboard', label: 'Leaderboard', icon: <Radio className="w-3.5 h-3.5" /> },
@@ -44,7 +46,7 @@ export const Navbar: React.FC = () => {
         {/* Left: Brand mark & Understated Nav tabs */}
         <div className="flex items-center gap-8">
           <button 
-            onClick={() => navigateToPage('problems')}
+            onClick={() => navigateToPage('home')}
             className="flex items-center gap-2.5 group focus:outline-none"
           >
             {/* Minimalist Geometric Brand Mark */}

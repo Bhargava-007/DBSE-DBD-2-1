@@ -3,6 +3,7 @@ import { JudgeProvider, useJudge } from './context/JudgeContext';
 import { Navbar } from './components/layout/Navbar';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { AuthModal } from './components/auth/AuthModal';
+import { HomePage } from './components/home/HomePage';
 import { ProblemCatalog } from './components/problems/ProblemCatalog';
 import { ProblemWorkspace } from './components/workspace/ProblemWorkspace';
 import { UserDashboard } from './components/dashboard/UserDashboard';
@@ -16,6 +17,8 @@ const MainContent: React.FC = () => {
 
   const renderActiveView = () => {
     switch (activePage) {
+      case 'home':
+        return <HomePage />;
       case 'problem-detail':
         return <ProblemWorkspace />;
       case 'dashboard':

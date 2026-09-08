@@ -13,6 +13,7 @@ import { MOCK_SUBMISSIONS } from '../mock/mockSubmissions';
 import { CURRENT_USER, SYSTEM_STATUS } from '../mock/mockUsers';
 
 export type ActivePage = 
+  | 'home'
   | 'problems' 
   | 'problem-detail' 
   | 'dashboard' 
@@ -53,6 +54,7 @@ interface JudgeContextType {
   isProblemSolved: (problemId: string) => boolean;
   navigateToProblem: (problemId: string) => void;
   navigateToPage: (page: ActivePage) => void;
+  addNewProblem: (newProblem: Problem) => void;
 }
 
 const JudgeContext = createContext<JudgeContextType | undefined>(undefined);
@@ -60,9 +62,9 @@ const JudgeContext = createContext<JudgeContextType | undefined>(undefined);
 export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(CURRENT_USER);
   const [systemStatus] = useState<SystemStatus>(SYSTEM_STATUS);
-  const [problems] = useState<Problem[]>(MOCK_PROBLEMS);
+  const [problems, setProblems] = useState<Problem[]>(MOCK_PROBLEMS);
   const [submissions, setSubmissions] = useState<Submission[]>(MOCK_SUBMISSIONS);
-  const [activePage, setActivePage] = useState<ActivePage>('problems');
+  const [activePage, setActivePage] = useState<ActivePage>('home');
   const [activeProblemId, setActiveProblemId] = useState<string>('prob-1');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -261,6 +263,10 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return newSubmission;
   };
 
+  const addNewProblem = (newProblem: Problem) => {
+    setProblems(prev => [newProblem, ...prev]);
+  };
+
   return (
     <JudgeContext.Provider
       value={{
@@ -291,6 +297,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isProblemSolved,
         navigateToProblem,
         navigateToPage,
+        addNewProblem,
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useJudge } from '../../context/JudgeContext';
 import type { Difficulty } from '../../types/judge';
 import { DifficultyBadge } from '../common/DifficultyBadge';
+import { CreateProblemModal } from './CreateProblemModal';
 import { 
   Search, 
   CheckCircle2, 
@@ -9,7 +10,8 @@ import {
   ArrowUpDown, 
   Tag, 
   ChevronRight,
-  X
+  X,
+  Plus
 } from 'lucide-react';
 
 export const ProblemCatalog: React.FC = () => {
@@ -19,6 +21,7 @@ export const ProblemCatalog: React.FC = () => {
     navigateToProblem 
   } = useJudge();
 
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | Difficulty>('All');
   const [selectedStatus, setSelectedStatus] = useState<'All' | 'Solved' | 'Unsolved'>('All');
@@ -107,27 +110,38 @@ export const ProblemCatalog: React.FC = () => {
           </p>
         </div>
 
-        {/* Progress summary pill */}
-        <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-1.5 rounded-lg shadow-2xs font-mono text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-500 dark:text-zinc-400 font-sans">Solved:</span>
-            <span className="font-bold text-slate-900 dark:text-zinc-100">{solvedCount}/{problems.length}</span>
+        <div className="flex items-center gap-3">
+          {/* Progress summary pill */}
+          <div className="flex items-center gap-3 bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 px-3.5 py-1.5 rounded-lg shadow-2xs font-mono text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-500 dark:text-zinc-400 font-sans">Solved:</span>
+              <span className="font-bold text-slate-900 dark:text-zinc-100">{solvedCount}/{problems.length}</span>
+            </div>
+
+            <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+              <div 
+                className="bg-emerald-600 dark:bg-emerald-500 h-full rounded-full transition-all duration-300"
+                style={{ width: `${(solvedCount / problems.length) * 100}%` }}
+              />
+            </div>
+
+            <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-400 border-l border-slate-200 dark:border-zinc-700 pl-2">
+              <span className="text-emerald-700 dark:text-emerald-400">{easySolved}E</span>
+              <span>•</span>
+              <span className="text-amber-700 dark:text-amber-400">{mediumSolved}M</span>
+              <span>•</span>
+              <span className="text-rose-700 dark:text-rose-400">{hardSolved}H</span>
+            </div>
           </div>
 
-          <div className="w-16 h-1.5 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-            <div 
-              className="bg-emerald-600 dark:bg-emerald-500 h-full rounded-full transition-all duration-300"
-              style={{ width: `${(solvedCount / problems.length) * 100}%` }}
-            />
-          </div>
-
-          <div className="hidden md:flex items-center gap-1.5 text-[11px] text-slate-400 border-l border-slate-200 dark:border-zinc-700 pl-2">
-            <span className="text-emerald-700 dark:text-emerald-400">{easySolved}E</span>
-            <span>•</span>
-            <span className="text-amber-700 dark:text-amber-400">{mediumSolved}M</span>
-            <span>•</span>
-            <span className="text-rose-700 dark:text-rose-400">{hardSolved}H</span>
-          </div>
+          {/* New Problem Button (CRUD Form trigger) */}
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-slate-900 text-xs font-semibold shadow-2xs transition-colors shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Create Problem</span>
+          </button>
         </div>
       </div>
 
@@ -354,6 +368,12 @@ export const ProblemCatalog: React.FC = () => {
           </table>
         </div>
       </div>
+
+      {/* Create Problem CRUD Modal */}
+      <CreateProblemModal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+      />
     </div>
   );
 };
