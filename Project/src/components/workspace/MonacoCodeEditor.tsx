@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import Editor from '@monaco-editor/react';
+import React, { useState, useRef, useEffect } from 'react';
+import Editor, { type OnMount, type Monaco } from '@monaco-editor/react';
 import { useJudge } from '../../context/JudgeContext';
 import type { SupportedLanguage } from '../../types/judge';
 import { 
@@ -8,7 +8,7 @@ import {
   Check, 
   Maximize2, 
   Minimize2, 
-  ChevronDown,
+  ChevronDown, 
   AlertCircle
 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ interface Props {
 }
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, { label: string; monacoLang: string; version: string }> = {
-  cpp: { label: 'C++', monacoLang: 'cpp', version: 'GCC 13.2' },
+  cpp: { label: 'C++', monacoLang: 'cpp', version: 'GCC 13' },
   python: { label: 'Python 3', monacoLang: 'python', version: 'Python 3.12' },
   java: { label: 'Java', monacoLang: 'java', version: 'OpenJDK 21' },
   javascript: { label: 'JavaScript', monacoLang: 'javascript', version: 'Node.js 20' },
@@ -40,6 +40,79 @@ export const MonacoCodeEditor: React.FC<Props> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  
+  const editorRef = useRef<any>(null);
+
+  const handleEditorDidMount: OnMount = (editor) => {
+    editorRef.current = editor;
+  };
+
+  const handleBeforeMount = (monaco: Monaco) => {
+    monaco.editor.defineTheme('algoflow-dark', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '52525b', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'f43f5e', fontStyle: 'bold' },
+        { token: 'string', foreground: '10b981' },
+        { token: 'number', foreground: 'f59e0b' },
+        { token: 'type', foreground: '8b5cf6' },
+        { token: 'function', foreground: 'a78bfa' },
+        { token: 'identifier', foreground: 'fafafa' },
+      ],
+      colors: {
+        'editor.background': '#0a0a0b',
+        'editor.foreground': '#fafafa',
+        'editor.lineHighlightBackground': '#111113',
+        'editorLineNumber.foreground': '#3f3f46',
+        'editorLineNumber.activeForeground': '#8b5cf6',
+        'editorCursor.foreground': '#8b5cf6',
+        'editor.selectionBackground': '#8b5cf633',
+        'editorGutter.background': '#0a0a0b',
+        'scrollbarSlider.background': '#27272a80',
+        'scrollbarSlider.hoverBackground': '#3f3f46',
+        'editorIndentGuide.background1': '#18181b',
+        'editorIndentGuide.activeBackground1': '#8b5cf660',
+      },
+    });
+
+    monaco.editor.defineTheme('algoflow-light', {
+      base: 'vs',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '94a3b8', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'e11d48', fontStyle: 'bold' },
+        { token: 'string', foreground: '059669' },
+        { token: 'number', foreground: 'd97706' },
+        { token: 'type', foreground: '7c3aed' },
+        { token: 'function', foreground: '6d28d9' },
+        { token: 'identifier', foreground: '0f172a' },
+      ],
+      colors: {
+        'editor.background': '#ffffff',
+        'editor.foreground': '#0f172a',
+        'editor.lineHighlightBackground': '#f8fafc',
+        'editorLineNumber.foreground': '#94a3b8',
+        'editorLineNumber.activeForeground': '#8b5cf6',
+        'editorCursor.foreground': '#8b5cf6',
+        'editor.selectionBackground': '#8b5cf630',
+        'editorGutter.background': '#ffffff',
+        'scrollbarSlider.background': '#cbd5e160',
+        'scrollbarSlider.hoverBackground': '#94a3b8',
+      },
+    });
+  };
+
+  // Re-layout editor on resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (editorRef.current) {
+        editorRef.current.layout();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code);
@@ -55,22 +128,22 @@ export const MonacoCodeEditor: React.FC<Props> = ({
   const currentLangConfig = LANGUAGE_LABELS[language];
 
   return (
-    <div className={`flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg shadow-xs overflow-hidden transition-all duration-150 ${
-      isFullscreen ? 'fixed inset-3 z-50 shadow-2xl' : 'h-full'
+    <div className={`flex flex-col bg-[var(--bg-canvas)] text-[var(--text-1)] overflow-hidden font-sans transition-colors ${
+      isFullscreen ? 'fixed inset-2 z-50 rounded-[var(--r-lg)] shadow-[var(--shadow-lg)] border border-[var(--border-strong)]' : 'h-full'
     }`}>
       
-      {/* Editor Header Toolbar */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-950/70 px-3 py-1.5 shrink-0 select-none">
+      {/* Top Toolbar */}
+      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3 shrink-0 select-none">
         
         {/* Left: Language Selector */}
         <div className="relative">
           <button
             onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 hover:border-slate-300 dark:hover:border-zinc-600 text-xs font-medium text-slate-800 dark:text-zinc-100 transition-colors shadow-2xs"
+            className="flex items-center gap-2 px-2.5 py-1 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[12px] font-medium text-[var(--text-1)] transition-colors"
           >
-            <span className="font-semibold text-slate-900 dark:text-zinc-50">{currentLangConfig.label}</span>
-            <span className="text-[11px] text-slate-400 font-mono hidden sm:inline">({currentLangConfig.version})</span>
-            <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
+            <span>{currentLangConfig.label}</span>
+            <span className="text-[10px] text-[var(--text-3)] font-mono hidden sm:inline">({currentLangConfig.version})</span>
+            <ChevronDown className="w-3 h-3 text-[var(--text-3)] ml-0.5" />
           </button>
 
           {isLangDropdownOpen && (
@@ -79,7 +152,7 @@ export const MonacoCodeEditor: React.FC<Props> = ({
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsLangDropdownOpen(false)} 
               />
-              <div className="absolute left-0 mt-1 w-48 rounded-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-md py-1 z-50 text-xs">
+              <div className="absolute left-0 mt-1 w-48 rounded-[var(--r-lg)] bg-[var(--bg-elevated)] border border-[var(--border-mid)] shadow-[var(--shadow-lg)] py-1 z-50 text-[12px] animate-in fade-in zoom-in-95 duration-100">
                 {(Object.keys(LANGUAGE_LABELS) as SupportedLanguage[]).map(langKey => {
                   const info = LANGUAGE_LABELS[langKey];
                   const isSelected = langKey === language;
@@ -92,15 +165,15 @@ export const MonacoCodeEditor: React.FC<Props> = ({
                       }}
                       className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition-colors ${
                         isSelected 
-                          ? 'bg-slate-100 text-slate-900 font-semibold dark:bg-zinc-800 dark:text-zinc-50' 
-                          : 'text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                          ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-medium' 
+                          : 'text-[var(--text-2)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)]'
                       }`}
                     >
                       <div className="flex flex-col">
-                        <span className="font-medium">{info.label}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{info.version}</span>
+                        <span>{info.label}</span>
+                        <span className="text-[10px] text-[var(--text-3)] font-mono">{info.version}</span>
                       </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-slate-900 dark:text-zinc-100" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--accent)]" />}
                     </button>
                   );
                 })}
@@ -109,31 +182,32 @@ export const MonacoCodeEditor: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Right: Editor Utilities */}
-        <div className="flex items-center gap-1">
+        {/* Right: Actions (Font size, Reset, Copy, Fullscreen) */}
+        <div className="flex items-center gap-1 text-[var(--text-2)] text-[12px] font-mono">
+          
           {/* Font Size Toggle */}
           <button
             onClick={() => setFontSize(prev => (prev === 13 ? 14 : prev === 14 ? 12 : 13))}
-            title="Toggle Editor Font Size (12px / 13px / 14px)"
-            className="px-2 py-1 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors text-[11px] font-mono font-medium"
+            title="Font Size (12px / 13px / 14px)"
+            className="px-2 py-0.5 rounded-[var(--r-sm)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
           >
             {fontSize}px
           </button>
 
-          {/* Reset Code with inline two-click confirmation */}
+          {/* Reset Code Confirmation */}
           {showResetConfirm ? (
-            <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 px-2 py-0.5 rounded text-[11px]">
-              <AlertCircle className="w-3 h-3 text-amber-600" />
-              <span className="text-amber-800 dark:text-amber-300">Reset code?</span>
+            <div className="flex items-center gap-1 bg-[var(--amber-dim)] border border-[var(--amber)]/30 px-2 py-0.5 rounded-[var(--r-sm)] text-[11px]">
+              <AlertCircle className="w-3 h-3 text-[var(--amber)]" />
+              <span className="text-[var(--text-1)] font-sans">Reset?</span>
               <button
                 onClick={handleConfirmReset}
-                className="font-bold text-amber-900 dark:text-amber-200 hover:underline ml-1"
+                className="font-semibold text-[var(--amber)] hover:underline ml-1"
               >
                 Yes
               </button>
               <button
                 onClick={() => setShowResetConfirm(false)}
-                className="text-slate-500 hover:underline ml-1"
+                className="text-[var(--text-3)] hover:underline ml-1"
               >
                 Cancel
               </button>
@@ -141,8 +215,8 @@ export const MonacoCodeEditor: React.FC<Props> = ({
           ) : (
             <button
               onClick={() => setShowResetConfirm(true)}
-              title="Reset code template"
-              className="p-1.5 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors"
+              title="Reset starter template"
+              className="p-1 rounded hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -151,57 +225,62 @@ export const MonacoCodeEditor: React.FC<Props> = ({
           {/* Copy Code */}
           <button
             onClick={handleCopy}
-            title="Copy Code to Clipboard"
-            className="p-1.5 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors"
+            title={copied ? 'Copied!' : 'Copy Code'}
+            className="p-1 rounded hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-[var(--green)]" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Fullscreen toggle */}
+          {/* Fullscreen Editor */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Editor"}
-            className="p-1.5 rounded hover:bg-slate-200/60 dark:hover:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-100 transition-colors"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Editor'}
+            className="p-1 rounded hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
 
-      {/* Monaco Container */}
-      <div className="flex-1 min-h-[300px] relative bg-white dark:bg-zinc-950">
+      {/* Monaco Editor Canvas */}
+      <div className="flex-1 min-h-0 bg-[var(--bg-canvas)]">
         <Editor
           height="100%"
           language={currentLangConfig.monacoLang}
           value={code}
           onChange={(val) => onCodeChange(val || '')}
-          theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+          beforeMount={handleBeforeMount}
+          onMount={handleEditorDidMount}
+          theme={theme === 'dark' ? 'algoflow-dark' : 'algoflow-light'}
           options={{
-            fontSize,
-            fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+            fontSize: fontSize,
+            fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, 'Courier New', monospace",
             fontLigatures: true,
-            tabSize: 4,
-            insertSpaces: true,
             minimap: { enabled: false },
             lineNumbers: 'on',
-            lineNumbersMinChars: 3,
             scrollBeyondLastLine: false,
             automaticLayout: true,
-            cursorBlinking: 'smooth',
-            cursorSmoothCaretAnimation: 'on',
-            renderLineHighlight: 'line',
+            tabSize: 4,
+            insertSpaces: true,
             padding: { top: 12, bottom: 12 },
-            overviewRulerBorder: false,
-            bracketPairColorization: { enabled: true },
-            fixedOverflowWidgets: true,
+            lineHeight: 21,
+            cursorBlinking: 'smooth',
+            smoothScrolling: true,
+            renderLineHighlight: 'all',
+            overviewRulerLanes: 0,
+            hideCursorInOverviewRuler: true,
+            scrollbar: {
+              vertical: 'visible',
+              horizontal: 'visible',
+              verticalScrollbarSize: 6,
+              horizontalScrollbarSize: 6,
+            },
           }}
-          loading={
-            <div className="h-full w-full flex items-center justify-center bg-white dark:bg-zinc-900 text-xs text-slate-500 font-mono">
-              Loading editor environment...
-            </div>
-          }
         />
       </div>
+
     </div>
   );
 };
+
+

@@ -10,7 +10,7 @@ import { UserDashboard } from './components/dashboard/UserDashboard';
 import { ContestsView } from './components/contests/ContestsView';
 import { LeaderboardView } from './components/contests/LeaderboardView';
 import { SubmissionsView } from './components/submissions/SubmissionsView';
-import { Terminal, Code2, ShieldCheck } from 'lucide-react';
+import { Code2, ShieldCheck } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { activePage } = useJudge();
@@ -38,9 +38,9 @@ const MainContent: React.FC = () => {
   const isWorkspace = activePage === 'problem-detail';
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-zinc-950 dark:text-zinc-100 selection:bg-blue-500/20 selection:text-blue-700 dark:selection:bg-blue-500/30 dark:selection:text-white transition-colors duration-150">
-      {/* Navbar */}
-      <Navbar />
+    <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-1)] selection:bg-[var(--accent-dim)] selection:text-[var(--text-1)] transition-colors duration-150 font-sans">
+      {/* Navbar — Hidden when in problem-detail workspace */}
+      {!isWorkspace && <Navbar />}
 
       {/* Main Content View */}
       <main className="flex-1 flex flex-col">
@@ -49,27 +49,30 @@ const MainContent: React.FC = () => {
 
       {/* Editorial footer (hidden in problem workspace to give maximum code editor space) */}
       {!isWorkspace && (
-        <footer className="border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-auto py-6 shadow-subtle">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-zinc-400">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 text-slate-900 dark:text-zinc-100 font-bold">
-                <Terminal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+        <footer className="border-t border-[var(--border)] bg-[var(--bg-card)] mt-auto py-6">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[12px] text-[var(--text-3)]">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 text-[var(--text-1)] font-semibold">
+                <svg className="w-4 h-4 text-[var(--text-1)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 18 22 12 16 6" />
+                  <polyline points="8 6 2 12 8 18" />
+                </svg>
                 <span>AlgoFlow</span>
               </div>
-              <span>•</span>
-              <span>Modern Code Practice & Evaluation Platform</span>
+              <span>·</span>
+              <span>Online Judge & Algorithmic Practice</span>
             </div>
 
-            <div className="flex items-center gap-4 text-2xs font-medium">
+            <div className="flex items-center gap-4 text-[11px] text-[var(--text-3)]">
               <span className="flex items-center gap-1">
-                <Code2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> Multi-Language Sandbox
+                <Code2 className="w-3.5 h-3.5 text-[var(--text-2)]" /> Multi-Language Sandbox
               </span>
-              <span>•</span>
+              <span>·</span>
               <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Automated Test Suite
+                <ShieldCheck className="w-3.5 h-3.5 text-[var(--green)]" /> Automated Evaluation
               </span>
-              <span>•</span>
-              <span>Privacy & Terms</span>
+              <span>·</span>
+              <span>Fast & Deterministic</span>
             </div>
           </div>
         </footer>
@@ -91,3 +94,4 @@ export function App() {
 }
 
 export default App;
+

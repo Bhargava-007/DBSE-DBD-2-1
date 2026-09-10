@@ -1,118 +1,122 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MOCK_CONTESTS } from '../../mock/mockContests';
 import { useJudge } from '../../context/JudgeContext';
-import { 
-  Trophy, 
-  Clock, 
-  Users, 
-  ArrowRight, 
-  ShieldCheck, 
-  CheckCircle2,
-  Check
-} from 'lucide-react';
+import { getContests, registerForContest } from '../../api/contests';
+import type { Contest } from '../../types/judge';
+import { Check } from 'lucide-react';
 
 export const ContestsView: React.FC = () => {
   const { navigateToPage, navigateToProblem } = useJudge();
+  const [contests, setContests] = useState<Contest[]>(MOCK_CONTESTS);
   const [registeredContests, setRegisteredContests] = useState<Record<string, boolean>>({});
 
-  const liveContests = MOCK_CONTESTS.filter(c => c.status === 'Live');
-  const upcomingContests = MOCK_CONTESTS.filter(c => c.status === 'Upcoming');
-  const pastContests = MOCK_CONTESTS.filter(c => c.status === 'Ended');
+  useEffect(() => {
+    const loadAllContests = async () => {
+      try {
+        const liveData = await getContests();
+        if (liveData && liveData.length > 0) {
+          setContests(liveData);
+        }
+      } catch {
+        console.warn('[ContestsView] Backend unavailable, displaying seeded tournaments.');
+      }
+    };
+    loadAllContests();
+  }, []);
 
-  const handleToggleRegister = (contestId: string) => {
+  const liveContests = contests.filter(c => c.status === 'Live');
+  const upcomingContests = contests.filter(c => c.status === 'Upcoming');
+  const pastContests = contests.filter(c => c.status === 'Ended');
+
+  const handleToggleRegister = async (contestId: string) => {
+    const willRegister = !registeredContests[contestId];
     setRegisteredContests(prev => ({
       ...prev,
-      [contestId]: !prev[contestId]
+      [contestId]: willRegister
     }));
+
+    if (willRegister) {
+      try {
+        await registerForContest(contestId);
+      } catch {
+        console.warn(`[ContestsView] Offline registration applied for ${contestId}`);
+      }
+    }
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8 page-fade">
       
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-zinc-800">
+      {/* Header Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-zinc-50">
-              Contests & Competitions
+            <h1 className="text-[20px] font-semibold text-[var(--text-1)]">
+              Contests
             </h1>
             {liveContests.length > 0 && (
-              <span className="text-[11px] font-mono font-semibold px-2 py-0.2 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+              <span className="text-[12px] text-[var(--text-2)] font-medium flex items-center gap-1.5 ml-2">
+                <span className="w-2 h-2 rounded-full bg-[var(--green)] pulse-dot" />
                 Live Round Active
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-            Scheduled rated tournaments with real-time scoring, live rankings, and automated test penalty evaluation.
+          <p className="text-[13px] text-[var(--text-2)] mt-1">
+            Timed algorithmic competitions with real-time scoring and rating adjustments.
           </p>
         </div>
 
         <button
           onClick={() => navigateToPage('leaderboard')}
-          className="self-start sm:self-auto flex items-center gap-2 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 text-xs font-semibold text-slate-700 dark:text-zinc-200 transition-colors shadow-2xs"
+          className="btn-secondary self-start sm:self-auto"
         >
-          <Trophy className="w-3.5 h-3.5 text-amber-500" />
-          <span>Global Leaderboard</span>
-          <ArrowRight className="w-3 h-3 text-slate-400" />
+          Global Leaderboard →
         </button>
       </div>
 
-      {/* Live Contests Arena */}
+      {/* Live Section */}
       {liveContests.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 font-mono">
-              Live Contest Arena
-            </h2>
+          <div className="section-label">
+            Live
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-4">
             {liveContests.map(contest => (
               <div 
                 key={contest.id}
-                className="p-5 rounded-lg bg-white dark:bg-zinc-900 border border-emerald-300 dark:border-emerald-800/60 shadow-xs space-y-4"
+                className="card p-6 space-y-4"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                        {contest.bannerBadge || 'LIVE'}
+                      <span className="badge badge-accent gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] pulse-dot" />
+                        Live Now
                       </span>
-                      <h3 className="text-base font-bold text-slate-900 dark:text-zinc-50">{contest.title}</h3>
+                      <h3 className="text-[18px] font-semibold text-[var(--text-1)]">
+                        {contest.title}
+                      </h3>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                      Started {new Date(contest.startTime).toLocaleTimeString()} • Concludes {new Date(contest.endTime).toLocaleTimeString()}
+                    <p className="text-[13px] text-[var(--text-2)]">
+                      Started {new Date(contest.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Concludes {new Date(contest.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
 
                   <button
                     onClick={() => navigateToProblem(contest.problemIds[0])}
-                    className="flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors"
+                    className="btn-primary shrink-0"
                   >
-                    <span>Enter Contest Arena</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    Enter Contest →
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 border-t border-slate-100 dark:border-zinc-800 text-xs text-slate-600 dark:text-zinc-400 font-mono">
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Duration: <strong className="text-slate-900 dark:text-zinc-100 font-sans">{contest.durationMinutes}m</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Contestants: <strong className="text-slate-900 dark:text-zinc-100 font-sans">{contest.participantCount.toLocaleString()}</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Integrity Guard: <strong className="text-emerald-700 dark:text-emerald-400 font-sans">Active</strong></span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Problems: <strong className="text-slate-900 dark:text-zinc-100 font-sans">{contest.problemIds.length}</strong></span>
-                  </div>
+                <div className="flex items-center gap-3 pt-3 border-t border-[var(--border)] text-[13px] text-[var(--text-2)]">
+                  <span>{contest.durationMinutes} mins</span>
+                  <span>·</span>
+                  <span>{contest.participantCount.toLocaleString()} Contestants</span>
+                  <span>·</span>
+                  <span>{contest.problemIds.length} Problems</span>
                 </div>
               </div>
             ))}
@@ -120,11 +124,11 @@ export const ContestsView: React.FC = () => {
         </div>
       )}
 
-      {/* Upcoming Contests */}
+      {/* Upcoming Section */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 font-mono">
-          Upcoming Tournaments
-        </h2>
+        <div className="section-label">
+          Upcoming
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {upcomingContests.map(contest => {
@@ -132,37 +136,30 @@ export const ContestsView: React.FC = () => {
             return (
               <div 
                 key={contest.id}
-                className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col justify-between space-y-3"
+                className="card p-5 flex flex-col justify-between space-y-4"
               >
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-medium px-2 py-0.2 rounded bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-300">
-                      {contest.bannerBadge}
-                    </span>
-                    <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 font-mono">
-                      {new Date(contest.startTime).toLocaleDateString()}
+                    <h3 className="text-[13px] font-medium text-[var(--text-1)]">
+                      {contest.title}
+                    </h3>
+                    <span className="text-[12px] text-[var(--text-2)] font-mono">
+                      {new Date(contest.startTime).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-50">{contest.title}</h3>
-                  <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-zinc-400 font-mono">
-                    <span>Duration: {contest.durationMinutes} mins</span>
-                    <span>•</span>
-                    <span>{contest.participantCount.toLocaleString()} Registered</span>
+                  <div className="text-[12px] text-[var(--text-2)]">
+                    {contest.durationMinutes} mins · {contest.participantCount.toLocaleString()} Registered
                   </div>
                 </div>
 
-                <div className="pt-2.5 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-mono">Scheduled in 4 days</span>
+                <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+                  <span className="text-[12px] text-[var(--text-3)]">Scheduled</span>
                   <button 
                     onClick={() => handleToggleRegister(contest.id)}
-                    className={`flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold transition-colors ${
-                      isRegistered
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
-                        : 'bg-slate-900 hover:bg-slate-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-slate-900'
-                    }`}
+                    className={isRegistered ? "btn-secondary py-1 px-3 text-xs" : "btn-primary py-1 px-3 text-xs"}
                   >
                     {isRegistered && <Check className="w-3 h-3" />}
-                    <span>{isRegistered ? 'Registered' : 'Register Now'}</span>
+                    <span>{isRegistered ? 'Registered' : 'Register'}</span>
                   </button>
                 </div>
               </div>
@@ -171,43 +168,48 @@ export const ContestsView: React.FC = () => {
         </div>
       </div>
 
-      {/* Past Contests Table */}
+      {/* Past Section */}
       <div className="space-y-3">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400 font-mono">
-          Past Contest Archives
-        </h2>
+        <div className="section-label">
+          Past
+        </div>
 
-        <div className="rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-[13px]">
               <thead>
-                <tr className="border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950/60 text-[11px] font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider">
-                  <th className="py-2.5 px-3">Tournament Round</th>
-                  <th className="py-2.5 px-3">Date</th>
-                  <th className="py-2.5 px-3">Participants</th>
-                  <th className="py-2.5 px-3">Problems</th>
-                  <th className="py-2.5 px-3 text-right">Standings</th>
+                <tr className="border-b border-[var(--border)] section-label h-[36px]">
+                  <th className="px-5">Tournament</th>
+                  <th className="px-5">Date</th>
+                  <th className="px-5">Participants</th>
+                  <th className="px-5">Problems</th>
+                  <th className="px-5 text-right">Standings</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
-                {pastContests.map(c => (
-                  <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-zinc-800/50 transition-colors">
-                    <td className="py-2.5 px-3 font-semibold text-slate-900 dark:text-zinc-100">
+              <tbody className="divide-y divide-[var(--border)]">
+                {pastContests.map((c, idx) => (
+                  <tr 
+                    key={c.id} 
+                    className={`h-[52px] hover:bg-[var(--bg-hover)] transition-colors ${
+                      idx % 2 === 1 ? 'bg-[var(--bg-card)]' : 'bg-transparent'
+                    }`}
+                  >
+                    <td className="px-5 font-medium text-[var(--text-1)]">
                       {c.title}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-500 dark:text-zinc-400 font-mono text-xs">
+                    <td className="px-5 text-[var(--text-2)]">
                       {new Date(c.startTime).toLocaleDateString()}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-600 dark:text-zinc-300 font-mono">
+                    <td className="px-5 text-[var(--text-2)]">
                       {c.participantCount.toLocaleString()}
                     </td>
-                    <td className="py-2.5 px-3 text-slate-600 dark:text-zinc-300">
+                    <td className="px-5 text-[var(--text-2)]">
                       {c.problemIds.length} Challenges
                     </td>
-                    <td className="py-2.5 px-3 text-right">
+                    <td className="px-5 text-right">
                       <button
                         onClick={() => navigateToPage('leaderboard')}
-                        className="text-blue-600 dark:text-blue-400 hover:underline text-xs font-semibold font-mono"
+                        className="text-[var(--accent)] hover:underline text-[12px] font-medium"
                       >
                         Rankings →
                       </button>
@@ -223,4 +225,5 @@ export const ContestsView: React.FC = () => {
     </div>
   );
 };
+
 

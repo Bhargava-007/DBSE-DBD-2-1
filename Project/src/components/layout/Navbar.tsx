@@ -2,17 +2,11 @@ import React, { useState } from 'react';
 import { useJudge } from '../../context/JudgeContext';
 import type { ActivePage } from '../../context/JudgeContext';
 import { 
-  Home,
-  Code2, 
-  Trophy, 
-  Radio, 
-  FileText, 
   Search, 
   Sun, 
   Moon, 
-  Bell, 
-  ChevronDown, 
   LayoutDashboard, 
+  FileText,
   LogOut 
 } from 'lucide-react';
 
@@ -31,79 +25,78 @@ export const Navbar: React.FC = () => {
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const navItems: { id: ActivePage; label: string; icon: React.ReactNode }[] = [
-    { id: 'home', label: 'Home', icon: <Home className="w-3.5 h-3.5" /> },
-    { id: 'problems', label: 'Problems', icon: <Code2 className="w-3.5 h-3.5" /> },
-    { id: 'contests', label: 'Contests', icon: <Trophy className="w-3.5 h-3.5" /> },
-    { id: 'leaderboard', label: 'Leaderboard', icon: <Radio className="w-3.5 h-3.5" /> },
-    { id: 'submissions', label: 'Submissions', icon: <FileText className="w-3.5 h-3.5" /> },
+  const navItems: { id: ActivePage; label: string }[] = [
+    { id: 'home', label: 'Home' },
+    { id: 'problems', label: 'Problems' },
+    { id: 'contests', label: 'Contests' },
+    { id: 'leaderboard', label: 'Leaderboard' },
+    { id: 'submissions', label: 'Submissions' },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full h-16 border-b border-slate-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors duration-150">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-full flex items-center justify-between gap-6">
+    <header className="sticky top-0 z-40 w-full h-[48px] border-b border-[var(--border)] bg-[var(--bg-canvas)] select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
         
-        {/* Left: Brand mark & Understated Nav tabs */}
-        <div className="flex items-center gap-8">
+        {/* Left: Brand mark & Nav tabs */}
+        <div className="flex items-center gap-8 h-full">
           <button 
             onClick={() => navigateToPage('home')}
-            className="flex items-center gap-2.5 group focus:outline-none"
+            className="flex items-center gap-2 text-[var(--text-1)] focus:outline-none"
           >
-            {/* Minimalist Geometric Brand Mark */}
-            <div className="w-7 h-7 rounded-md bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900 shadow-subtle transition-transform duration-150 group-hover:scale-105">
-              <svg 
-                className="w-4 h-4" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2.5" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <polyline points="16 18 22 12 16 6" />
-                <polyline points="8 6 2 12 8 18" />
-              </svg>
-            </div>
-            <span className="font-semibold tracking-tight text-slate-900 dark:text-zinc-50 text-[15px]">
+            <svg 
+              className="w-4 h-4 text-[var(--text-1)]" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              strokeWidth="2.2" 
+              strokeLinecap="round" 
+              strokeLinejoin="round"
+            >
+              <polyline points="16 18 22 12 16 6" />
+              <polyline points="8 6 2 12 8 18" />
+            </svg>
+            <span className="font-semibold text-[14px] tracking-tight text-[var(--text-1)]">
               AlgoFlow
             </span>
           </button>
 
-          {/* Understated Nav Tabs */}
-          <nav className="hidden md:flex items-center gap-1">
+          {/* Nav Links: 13px, text-2 default, text-1 active, 2px bottom border on active */}
+          <nav className="hidden md:flex items-center gap-6 h-full">
             {navItems.map(item => {
               const isActive = activePage === item.id || (item.id === 'problems' && activePage === 'problem-detail');
               return (
                 <button
                   key={item.id}
                   onClick={() => navigateToPage(item.id)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors duration-150 ${
+                  className={`relative h-full flex items-center text-[13px] transition-colors ${
                     isActive
-                      ? 'bg-slate-100 text-slate-900 dark:bg-zinc-800 dark:text-zinc-50'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-900'
+                      ? 'text-[var(--text-1)] font-medium'
+                      : 'text-[var(--text-2)] hover:text-[var(--text-1)]'
                   }`}
                 >
-                  {item.icon}
                   <span>{item.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--accent)]" />
+                  )}
                 </button>
               );
             })}
           </nav>
         </div>
 
-        {/* Right side: Search, Theme Toggle, Notifications, User */}
-        <div className="flex items-center gap-2.5">
+        {/* Right side: Search pill, Theme toggle, User */}
+        <div className="flex items-center gap-3">
           
-          {/* Linear-Style Search Trigger */}
+          {/* 180px search pill with ⌘K badge */}
           <button
             onClick={() => setIsCommandPaletteOpen(true)}
-            className="flex items-center gap-3 px-3 py-1.5 rounded-md bg-slate-100/70 hover:bg-slate-100 dark:bg-zinc-900/80 dark:hover:bg-zinc-800 border border-slate-200/60 dark:border-zinc-800 text-slate-500 dark:text-zinc-400 text-xs transition-colors duration-150"
+            className="w-[180px] h-[30px] flex items-center justify-between px-2.5 rounded-[6px] bg-[var(--bg-elevated)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] text-xs transition-colors"
           >
             <div className="flex items-center gap-2">
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden sm:inline font-normal text-[12px]">Search problems...</span>
+              <Search className="w-3.5 h-3.5 text-[var(--text-3)]" />
+              <span className="text-[12px] text-[var(--text-3)]">Search...</span>
             </div>
-            <kbd className="hidden sm:inline-flex items-center font-mono text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-500 dark:text-zinc-400 shadow-2xs">
+            <kbd className="inline-flex items-center font-mono text-[10px] px-1 rounded bg-[var(--bg-card)] border border-[var(--border)] text-[var(--text-3)]">
               ⌘K
             </kbd>
           </button>
@@ -112,46 +105,24 @@ export const Navbar: React.FC = () => {
           <button
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors duration-150"
+            className="p-1 rounded-[var(--r-sm)] text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
             title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
           >
             {theme === 'light' ? (
               <Moon className="w-4 h-4" />
             ) : (
-              <Sun className="w-4 h-4 text-amber-400" />
+              <Sun className="w-4 h-4" />
             )}
           </button>
 
-          {/* Notifications Bell */}
-          <button
-            onClick={() => alert('No new notifications')}
-            aria-label="Notifications"
-            className="p-2 rounded-md text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-slate-100 dark:hover:bg-zinc-900 transition-colors duration-150 hidden sm:inline-flex"
-          >
-            <Bell className="w-4 h-4" />
-          </button>
-
-          {/* User Profile Pill or Sign in */}
+          {/* User Avatar Circle (28px) or Sign in */}
           {currentUser ? (
             <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2.5 pl-2 pr-3 py-1 rounded-full bg-slate-100/70 dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 transition-colors duration-150"
+                className="w-7 h-7 rounded-full bg-[var(--bg-active)] border border-[var(--border-mid)] text-[var(--text-1)] flex items-center justify-center text-[12px] font-medium hover:border-[var(--border-strong)] transition-colors"
               >
-                <div className="w-6 h-6 rounded-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 flex items-center justify-center text-[10px] font-bold">
-                  {currentUser.username.substring(0, 2).toUpperCase()}
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-xs font-medium text-slate-900 dark:text-zinc-100 leading-none">
-                    {currentUser.username}
-                  </span>
-                  <div className="flex items-center gap-1 mt-0.5 font-mono text-[10px] text-slate-500 dark:text-zinc-400 tabular-nums">
-                    <span className="text-slate-700 dark:text-zinc-300 font-medium">{currentUser.rating}</span>
-                    <span>•</span>
-                    <span>#{currentUser.rank}</span>
-                  </div>
-                </div>
-                <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5" />
+                {currentUser.username.substring(0, 2).toUpperCase()}
               </button>
 
               {/* Dropdown Menu */}
@@ -161,17 +132,10 @@ export const Navbar: React.FC = () => {
                     className="fixed inset-0 z-40" 
                     onClick={() => setIsDropdownOpen(false)} 
                   />
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 shadow-elevated py-1.5 z-50 divide-y divide-slate-100 dark:divide-zinc-800">
-                    <div className="px-3.5 py-2.5">
-                      <p className="text-xs font-semibold text-slate-900 dark:text-zinc-100">{currentUser.name}</p>
-                      <p className="text-2xs text-slate-500 dark:text-zinc-400 truncate">{currentUser.email}</p>
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700 font-medium tabular-nums">
-                          Rating {currentUser.rating}
-                        </span>
-                        <span className="text-2xs text-slate-400">•</span>
-                        <span className="text-2xs text-slate-500 dark:text-zinc-400">Rank #{currentUser.rank}</span>
-                      </div>
+                  <div className="absolute right-0 mt-2 w-52 rounded-[var(--r-lg)] bg-[var(--bg-elevated)] border border-[var(--border-mid)] shadow-[var(--shadow-lg)] py-1.5 z-50 divide-y divide-[var(--border)]">
+                    <div className="px-3 py-2">
+                      <p className="text-xs font-medium text-[var(--text-1)]">{currentUser.name}</p>
+                      <p className="text-[11px] text-[var(--text-3)] truncate">@{currentUser.username}</p>
                     </div>
 
                     <div className="py-1">
@@ -180,20 +144,20 @@ export const Navbar: React.FC = () => {
                           navigateToPage('dashboard');
                           setIsDropdownOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium"
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]"
                       >
-                        <LayoutDashboard className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Developer Dashboard</span>
+                        <LayoutDashboard className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                        <span>Profile & Stats</span>
                       </button>
                       <button
                         onClick={() => {
                           navigateToPage('submissions');
                           setIsDropdownOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-3.5 py-2 text-xs text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 font-medium"
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]"
                       >
-                        <FileText className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Submissions ({currentUser.solvedCount} Solved)</span>
+                        <FileText className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                        <span>Submissions</span>
                       </button>
                     </div>
 
@@ -203,7 +167,7 @@ export const Navbar: React.FC = () => {
                           setCurrentUser(null);
                           setIsDropdownOpen(false);
                         }}
-                        className="w-full flex items-center gap-2 px-3.5 py-2 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 font-medium"
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[var(--red)] hover:bg-[var(--bg-hover)]"
                       >
                         <LogOut className="w-3.5 h-3.5" />
                         <span>Sign Out</span>
@@ -220,7 +184,7 @@ export const Navbar: React.FC = () => {
                   setAuthModalMode('login');
                   setIsAuthModalOpen(true);
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+                className="btn-secondary py-1 px-2.5 text-xs"
               >
                 Sign In
               </button>
@@ -229,7 +193,7 @@ export const Navbar: React.FC = () => {
                   setAuthModalMode('register');
                   setIsAuthModalOpen(true);
                 }}
-                className="px-3.5 py-1.5 text-xs font-medium rounded-md bg-slate-900 dark:bg-white hover:bg-slate-800 dark:hover:bg-zinc-200 text-white dark:text-slate-900 shadow-subtle transition-colors duration-150"
+                className="btn-primary py-1 px-2.5 text-xs"
               >
                 Sign Up
               </button>

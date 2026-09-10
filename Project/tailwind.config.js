@@ -8,10 +8,42 @@ export default {
   theme: {
     extend: {
       colors: {
-        canvas: {
-          light: '#fafafa',
-          dark: '#09090b',
-        },
+        canvas: 'var(--bg-canvas)',
+        card: 'var(--bg-card)',
+        elevated: 'var(--bg-elevated)',
+        hover: 'var(--bg-hover)',
+        active: 'var(--bg-active)',
+
+        border: 'var(--border)',
+        borderMid: 'var(--border-mid)',
+        borderStrong: 'var(--border-strong)',
+
+        text1: 'var(--text-1)',
+        text2: 'var(--text-2)',
+        text3: 'var(--text-3)',
+        text4: 'var(--text-4)',
+
+        accent: 'var(--accent)',
+        accentDim: 'var(--accent-dim)',
+        accentBorder: 'var(--accent-border)',
+
+        green: 'var(--green)',
+        greenDim: 'var(--green-dim)',
+        red: 'var(--red)',
+        redDim: 'var(--red-dim)',
+        amber: 'var(--amber)',
+        amberDim: 'var(--amber-dim)',
+
+        easy: 'var(--easy)',
+        medium: 'var(--medium)',
+        hard: 'var(--hard)',
+      },
+      borderRadius: {
+        sm: 'var(--r-sm)',
+        md: 'var(--r-md)',
+        lg: 'var(--r-lg)',
+        xl: 'var(--r-xl)',
+        full: 'var(--r-full)',
       },
       fontFamily: {
         sans: [
@@ -23,8 +55,6 @@ export default {
           'sans-serif'
         ],
         mono: [
-          '"JetBrains Mono"',
-          '"Fira Code"',
           'ui-monospace',
           'SFMono-Regular',
           'Menlo',
@@ -33,20 +63,10 @@ export default {
           'monospace'
         ],
       },
-      fontSize: {
-        '2xs': '0.6875rem',
-      },
-      letterSpacing: {
-        tightest: '-0.025em',
-        tighter: '-0.02em',
-        tight: '-0.01em',
-      },
       boxShadow: {
-        'subtle': '0 1px 2px 0 rgb(0 0 0 / 0.03), 0 1px 3px 0 rgb(0 0 0 / 0.04)',
-        'card': '0 0 0 1px rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
-        'card-dark': '0 0 0 1px rgba(255, 255, 255, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.4)',
-        'elevated': '0 0 0 1px rgba(0, 0, 0, 0.05), 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
-        'elevated-dark': '0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 16px -2px rgba(0, 0, 0, 0.5)',
+        'sm': 'var(--shadow-sm)',
+        'md': 'var(--shadow-md)',
+        'lg': 'var(--shadow-lg)',
       }
     },
   },

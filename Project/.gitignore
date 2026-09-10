@@ -8,12 +8,13 @@ dist/
 dist-ssr/
 *.local
 
-# Environment Variables
+# Environment Variables (Ignored globally across all subdirectories)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+*.env
+**/.env
+**/.env.*
+!**/.env.example
 
 # Docker & Database local mounts
 *.log

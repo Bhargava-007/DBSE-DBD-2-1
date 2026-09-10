@@ -1,20 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { useJudge } from '../../context/JudgeContext';
 import { VerdictBadge } from '../common/VerdictBadge';
-import { 
-  Building2, 
-  Mail, 
-  ExternalLink,
-  Flame,
-  CheckCircle2
-} from 'lucide-react';
 
 export const UserDashboard: React.FC = () => {
-  const { currentUser, submissions, navigateToProblem } = useJudge();
-  const [hoveredCell, setHoveredCell] = useState<{ week: number; day: number; count: number; dateStr: string } | null>(null);
+  const { currentUser, submissions, problems, navigateToProblem, isProblemSolved } = useJudge();
+  const [hoveredCell, setHoveredCell] = useState<{ count: number; dateStr: string } | null>(null);
 
   const userSubmissions = useMemo(() => {
-    return submissions.filter(s => s.userId === currentUser?.id);
+    return submissions.filter(s => s.userId === currentUser?.id || !s.userId);
   }, [submissions, currentUser]);
 
   const acceptedCount = useMemo(() => {
@@ -26,330 +19,372 @@ export const UserDashboard: React.FC = () => {
     return Math.round((acceptedCount / userSubmissions.length) * 100);
   }, [userSubmissions, acceptedCount]);
 
-  // 52-week activity heatmap data
+  // Real solved problem counts
+  const realSolvedCount = useMemo(() => {
+    return problems.filter(p => isProblemSolved(p.id)).length;
+  }, [problems, isProblemSolved]);
+
+  const easyTotal = useMemo(() => problems.filter(p => p.difficulty === 'Easy').length || 1, [problems]);
+  const mediumTotal = useMemo(() => problems.filter(p => p.difficulty === 'Medium').length || 1, [problems]);
+  const hardTotal = useMemo(() => problems.filter(p => p.difficulty === 'Hard').length || 1, [problems]);
+
+  const easySolved = useMemo(() => problems.filter(p => p.difficulty === 'Easy' && isProblemSolved(p.id)).length, [problems, isProblemSolved]);
+  const mediumSolved = useMemo(() => problems.filter(p => p.difficulty === 'Medium' && isProblemSolved(p.id)).length, [problems, isProblemSolved]);
+  const hardSolved = useMemo(() => problems.filter(p => p.difficulty === 'Hard' && isProblemSolved(p.id)).length, [problems, isProblemSolved]);
+
+  // Favorite Language
+  const favLang = useMemo(() => {
+    if (userSubmissions.length === 0) return 'None yet';
+    const counts: Record<string, number> = {};
+    userSubmissions.forEach(s => {
+      counts[s.language] = (counts[s.language] || 0) + 1;
+    });
+    let best = 'cpp';
+    let max = 0;
+    Object.entries(counts).forEach(([lang, count]) => {
+      if (count > max) {
+        max = count;
+        best = lang;
+      }
+    });
+    const map: Record<string, string> = {
+      cpp: 'C++',
+      python: 'Python 3',
+      java: 'Java',
+      javascript: 'JavaScript'
+    };
+    return map[best] || best.toUpperCase();
+  }, [userSubmissions]);
+
+  // 52-week activity heatmap data based on actual submission dates
   const heatmapData = useMemo(() => {
     const weeks = 52;
     const days = 7;
     const grid: { count: number; dateStr: string }[][] = [];
     const now = new Date();
 
+    // Map submissions by YYYY-MM-DD
+    const submissionMap = new Map<string, number>();
+    userSubmissions.forEach(sub => {
+      const d = new Date(sub.submittedAt);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+      submissionMap.set(key, (submissionMap.get(key) || 0) + 1);
+    });
+
     for (let w = 0; w < weeks; w++) {
       const week: { count: number; dateStr: string }[] = [];
       for (let d = 0; d < days; d++) {
-        // Compute realistic dates going back 52 weeks
         const daysAgo = (51 - w) * 7 + (6 - d);
         const cellDate = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
         const dateStr = cellDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-        const recentBonus = w > 40 ? 0.35 : 0.15;
-        const rand = Math.random();
-        let count = 0;
-        if (rand < 0.35 - recentBonus) {
-          count = 0;
-        } else if (rand < 0.65) {
-          count = Math.floor(Math.random() * 2) + 1;
-        } else if (rand < 0.88) {
-          count = Math.floor(Math.random() * 3) + 3;
-        } else {
-          count = Math.floor(Math.random() * 4) + 6;
-        }
+        const key = `${cellDate.getFullYear()}-${cellDate.getMonth() + 1}-${cellDate.getDate()}`;
+        
+        const count = submissionMap.get(key) || 0;
         week.push({ count, dateStr });
       }
       grid.push(week);
     }
     return grid;
-  }, []);
-
-  const totalHeatmapSubmissions = useMemo(() => {
-    return heatmapData.reduce((acc, week) => acc + week.reduce((wAcc, cell) => wAcc + cell.count, 0), 0);
-  }, [heatmapData]);
+  }, [userSubmissions]);
 
   const getHeatmapColor = (count: number) => {
-    if (count === 0) return 'bg-slate-100 dark:bg-zinc-800/70 border-slate-200/50 dark:border-zinc-700/50';
-    if (count <= 2) return 'bg-emerald-100 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800/60';
-    if (count <= 5) return 'bg-emerald-300 dark:bg-emerald-700/80 border-emerald-400 dark:border-emerald-600/80';
-    return 'bg-emerald-500 dark:bg-emerald-500 border-emerald-600 dark:border-emerald-400';
+    if (count === 0) return 'var(--bg-elevated)';
+    if (count === 1) return 'rgba(139,92,246,0.3)';
+    if (count <= 3) return 'rgba(139,92,246,0.55)';
+    return 'var(--accent)';
   };
 
   if (!currentUser) return null;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6 page-fade">
       
-      {/* Profile Header Banner */}
-      <div className="rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+      {/* Profile Header Card */}
+      <div className="card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-slate-900 dark:bg-zinc-100 text-white dark:text-slate-900 flex items-center justify-center text-lg font-bold shadow-xs shrink-0">
+          <div className="w-12 h-12 rounded-full bg-[var(--bg-active)] border border-[var(--border-mid)] text-[var(--text-1)] flex items-center justify-center text-[18px] font-semibold shrink-0">
             {currentUser.username.substring(0, 2).toUpperCase()}
           </div>
 
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-zinc-50">
-                {currentUser.name}
-              </h1>
-              <span className="font-mono text-xs text-slate-500 dark:text-zinc-400">@{currentUser.username}</span>
-              <span className="text-[11px] font-medium px-2 py-0.2 rounded-full bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-zinc-300 border border-slate-200 dark:border-zinc-700">
-                Candidate
-              </span>
+          <div className="space-y-0.5">
+            <h1 className="text-[18px] font-semibold text-[var(--text-1)]">
+              {currentUser.name}
+            </h1>
+            <div className="text-[14px] text-[var(--text-2)] font-mono">
+              @{currentUser.username}
             </div>
-
-            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-zinc-400">
-              <span className="flex items-center gap-1">
-                <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                {currentUser.institution}
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <Mail className="w-3.5 h-3.5 text-slate-400" />
-                {currentUser.email}
-              </span>
+            <div className="text-[13px] text-[var(--text-3)]">
+              {currentUser.email}
             </div>
           </div>
         </div>
 
-        {/* Standings Telemetry */}
-        <div className="flex items-center gap-2 font-mono self-start md:self-auto text-xs">
-          <div className="px-3.5 py-2 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 text-center">
-            <div className="text-[10px] text-slate-400 uppercase font-sans font-medium">Contest Rating</div>
-            <div className="text-base font-bold text-slate-900 dark:text-zinc-50 mt-0.5 tabular-nums">{currentUser.rating}</div>
-            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-sans">Top 1.4%</div>
-          </div>
-
-          <div className="px-3.5 py-2 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 text-center">
-            <div className="text-[10px] text-slate-400 uppercase font-sans font-medium">Global Rank</div>
-            <div className="text-base font-bold text-slate-900 dark:text-zinc-100 mt-0.5 tabular-nums">#{currentUser.rank}</div>
-            <div className="text-[10px] text-slate-400 font-sans">142k tracked</div>
-          </div>
-
-          <div className="px-3.5 py-2 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 text-center">
-            <div className="text-[10px] text-slate-400 uppercase font-sans font-medium">Streak</div>
-            <div className="text-base font-bold text-slate-900 dark:text-zinc-100 mt-0.5 tabular-nums flex items-center justify-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-amber-500" /> 28d
-            </div>
-            <div className="text-[10px] text-slate-400 font-sans">Active</div>
-          </div>
+        {/* Right side stats inline */}
+        <div className="flex items-center gap-2 text-[13px] text-[var(--text-2)] font-medium self-start md:self-auto flex-wrap">
+          <span>Rating {currentUser.rating}</span>
+          <span>·</span>
+          <span>Rank #{currentUser.rank || 0}</span>
+          <span>·</span>
+          <span>0 day streak</span>
         </div>
       </div>
 
-      {/* Two-Column Progress & Performance Section */}
+      {/* Bento Grid (2 columns) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         
-        {/* Solved Breakdown Panel */}
-        <div className="rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-zinc-50">Solved Challenges Breakdown</h2>
-              <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Verified solutions across difficulty thresholds</p>
-            </div>
-            <div className="font-mono text-xs font-bold text-slate-900 dark:text-zinc-100">
-              <span className="text-lg text-emerald-700 dark:text-emerald-400">{currentUser.solvedCount}</span>
-              <span className="text-slate-400 font-normal"> / 2,400+ total</span>
-            </div>
-          </div>
-
-          {/* Segmented Progress Bar */}
-          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden flex">
-            <div 
-              style={{ width: `${(currentUser.easySolved / currentUser.solvedCount) * 100}%` }}
-              className="bg-emerald-500 h-full"
-              title={`Easy: ${currentUser.easySolved}`}
-            />
-            <div 
-              style={{ width: `${(currentUser.mediumSolved / currentUser.solvedCount) * 100}%` }}
-              className="bg-amber-500 h-full"
-              title={`Medium: ${currentUser.mediumSolved}`}
-            />
-            <div 
-              style={{ width: `${(currentUser.hardSolved / currentUser.solvedCount) * 100}%` }}
-              className="bg-rose-500 h-full"
-              title={`Hard: ${currentUser.hardSolved}`}
-            />
-          </div>
-
-          {/* Detailed Rows */}
-          <div className="space-y-3 font-mono text-xs pt-1">
+        {/* Left card: Solved Problems */}
+        <div className="card p-6 space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                <span className="font-sans font-medium text-slate-700 dark:text-zinc-300">Easy</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-slate-900 dark:text-zinc-100 font-bold">{currentUser.easySolved} <span className="text-slate-400 font-normal">/ 150</span></span>
-                <span className="text-[11px] text-slate-400 w-10 text-right">{Math.round((currentUser.easySolved / 150) * 100)}%</span>
-              </div>
-            </div>
-            <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-              <div className="bg-emerald-500 h-full" style={{ width: `${(currentUser.easySolved / 150) * 100}%` }} />
+              <h2 className="text-[14px] font-semibold text-[var(--text-1)]">
+                Solved Problems
+              </h2>
+              <span className="text-[13px] text-[var(--text-2)]">
+                {realSolvedCount} / {problems.length} total
+              </span>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-500" />
-                <span className="font-sans font-medium text-slate-700 dark:text-zinc-300">Medium</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-slate-900 dark:text-zinc-100 font-bold">{currentUser.mediumSolved} <span className="text-slate-400 font-normal">/ 150</span></span>
-                <span className="text-[11px] text-slate-400 w-10 text-right">{Math.round((currentUser.mediumSolved / 150) * 100)}%</span>
-              </div>
+            {/* Main Progress Bar */}
+            <div className="w-full h-[6px] rounded-full bg-[var(--bg-active)] overflow-hidden">
+              <div 
+                className="h-full bg-[var(--accent)] transition-all duration-300"
+                style={{ width: `${(realSolvedCount / (problems.length || 1)) * 100}%` }}
+              />
             </div>
-            <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-              <div className="bg-amber-500 h-full" style={{ width: `${(currentUser.mediumSolved / 150) * 100}%` }} />
+          </div>
+
+          {/* Difficulty breakdown rows */}
+          <div className="space-y-3 text-[13px] pt-2 border-t border-[var(--border)]">
+            {/* Easy */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[var(--green)]" />
+                  <span className="text-[var(--text-2)]">Easy</span>
+                </div>
+                <span className="text-[var(--text-1)] font-mono text-[12px]">
+                  {easySolved}/{easyTotal}
+                </span>
+              </div>
+              <div className="w-full h-[4px] rounded-full bg-[var(--bg-active)] overflow-hidden">
+                <div 
+                  className="h-full bg-[var(--green)] rounded-full"
+                  style={{ width: `${(easySolved / easyTotal) * 100}%` }}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-rose-500" />
-                <span className="font-sans font-medium text-slate-700 dark:text-zinc-300">Hard</span>
+            {/* Medium */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[var(--amber)]" />
+                  <span className="text-[var(--text-2)]">Medium</span>
+                </div>
+                <span className="text-[var(--text-1)] font-mono text-[12px]">
+                  {mediumSolved}/{mediumTotal}
+                </span>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-slate-900 dark:text-zinc-100 font-bold">{currentUser.hardSolved} <span className="text-slate-400 font-normal">/ 50</span></span>
-                <span className="text-[11px] text-slate-400 w-10 text-right">{Math.round((currentUser.hardSolved / 50) * 100)}%</span>
+              <div className="w-full h-[4px] rounded-full bg-[var(--bg-active)] overflow-hidden">
+                <div 
+                  className="h-full bg-[var(--amber)] rounded-full"
+                  style={{ width: `${(mediumSolved / mediumTotal) * 100}%` }}
+                />
               </div>
             </div>
-            <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
-              <div className="bg-rose-500 h-full" style={{ width: `${(currentUser.hardSolved / 50) * 100}%` }} />
+
+            {/* Hard */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[var(--red)]" />
+                  <span className="text-[var(--text-2)]">Hard</span>
+                </div>
+                <span className="text-[var(--text-1)] font-mono text-[12px]">
+                  {hardSolved}/{hardTotal}
+                </span>
+              </div>
+              <div className="w-full h-[4px] rounded-full bg-[var(--bg-active)] overflow-hidden">
+                <div 
+                  className="h-full bg-[var(--red)] rounded-full"
+                  style={{ width: `${(hardSolved / hardTotal) * 100}%` }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Evaluation Metrics & Contest Standing Panel */}
-        <div className="rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-5 shadow-xs flex flex-col justify-between space-y-4">
+        {/* Right card: Your Stats */}
+        <div className="card p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-zinc-50">Evaluation Accuracy & Benchmark</h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">Overall submission success and execution standards</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 font-mono">
-            <div className="p-3 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 space-y-1">
-              <div className="text-[11px] text-slate-500 dark:text-zinc-400 uppercase font-sans">Acceptance Rate</div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tabular-nums">{acceptanceRate}%</div>
-              <div className="text-[11px] text-slate-400 font-sans">{acceptedCount} of {userSubmissions.length} attempts</div>
-            </div>
-
-            <div className="p-3 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 space-y-1">
-              <div className="text-[11px] text-slate-500 dark:text-zinc-400 uppercase font-sans">Division Standing</div>
-              <div className="text-2xl font-bold text-slate-900 dark:text-zinc-100 tabular-nums">Div 1</div>
-              <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-sans">Rating &gt; 1800 Tier</div>
-            </div>
-          </div>
-
-          <div className="p-3 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200/80 dark:border-zinc-800 text-xs space-y-1 font-sans">
-            <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-zinc-100">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Standardized Sandbox Guarantees</span>
-            </div>
-            <p className="text-slate-600 dark:text-zinc-400 text-[11px] leading-relaxed">
-              All submissions run inside isolated gVisor containers with strict CPU time quotas and memory ceiling enforcement.
+            <h2 className="text-[14px] font-semibold text-[var(--text-1)]">
+              Your Stats
+            </h2>
+            <p className="text-[13px] text-[var(--text-3)] mt-0.5">
+              Performance metrics from verified executions
             </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-1">
+              <div className="text-[11px] text-[var(--text-3)] font-medium uppercase tracking-wider">
+                Acceptance Rate
+              </div>
+              <div className="text-[22px] font-bold text-[var(--text-1)] tabular-nums">
+                {acceptanceRate}%
+              </div>
+              <div className="text-[11px] text-[var(--text-3)]">
+                {acceptedCount} of {userSubmissions.length} accepted
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-1">
+              <div className="text-[11px] text-[var(--text-3)] font-medium uppercase tracking-wider">
+                Submissions
+              </div>
+              <div className="text-[22px] font-bold text-[var(--text-1)] tabular-nums">
+                {userSubmissions.length}
+              </div>
+              <div className="text-[11px] text-[var(--text-3)]">
+                Total recorded
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-1">
+              <div className="text-[11px] text-[var(--text-3)] font-medium uppercase tracking-wider">
+                Problems Solved
+              </div>
+              <div className="text-[22px] font-bold text-[var(--text-1)] tabular-nums">
+                {realSolvedCount}
+              </div>
+              <div className="text-[11px] text-[var(--text-3)]">
+                Unique challenges
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-1">
+              <div className="text-[11px] text-[var(--text-3)] font-medium uppercase tracking-wider">
+                Favorite Language
+              </div>
+              <div className="text-[18px] font-semibold text-[var(--text-1)] truncate pt-1">
+                {favLang}
+              </div>
+              <div className="text-[11px] text-[var(--text-3)]">
+                Most used runtime
+              </div>
+            </div>
           </div>
         </div>
 
       </div>
 
-      {/* 52-Week Submission Activity Heatmap */}
-      <div className="rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 p-5 shadow-xs space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-900 dark:text-zinc-50">Annual Activity Heatmap</h2>
-            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-0.5">
-              {totalHeatmapSubmissions} sandbox evaluations recorded across 52 weeks
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400 dark:text-zinc-500 font-mono">
-            <span>Less</span>
-            <span className="w-2.5 h-2.5 rounded-xs bg-slate-100 border border-slate-200/60 dark:bg-zinc-800 dark:border-zinc-700" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-100 border border-emerald-200 dark:bg-emerald-950 dark:border-emerald-900" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-300 border border-emerald-400 dark:bg-emerald-800 dark:border-emerald-700" />
-            <span className="w-2.5 h-2.5 rounded-xs bg-emerald-500 border border-emerald-600 dark:bg-emerald-500 dark:border-emerald-400" />
-            <span>More</span>
-          </div>
-        </div>
-
-        {/* Interactive Tooltip Banner if cell hovered */}
-        <div className="h-5 text-xs font-mono text-slate-600 dark:text-zinc-400">
-          {hoveredCell ? (
-            <span>
-              <strong className="text-slate-900 dark:text-zinc-100">{hoveredCell.count} submissions</strong> on {hoveredCell.dateStr}
+      {/* Activity Heatmap Card (full width) */}
+      <div className="card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[13px] font-semibold text-[var(--text-1)]">
+              Activity
+            </h2>
+            <span className="text-[13px] text-[var(--text-3)]">
+              · Past year
             </span>
-          ) : (
-            <span className="text-slate-400 text-[11px] font-sans">Hover over any square to inspect daily submission volume</span>
-          )}
+          </div>
+
+          <div className="h-4 text-[12px] text-[var(--text-2)] font-mono">
+            {hoveredCell ? (
+              <span>{hoveredCell.count} submissions on {hoveredCell.dateStr}</span>
+            ) : null}
+          </div>
         </div>
 
         {/* Heatmap Grid */}
         <div className="overflow-x-auto pb-1 no-scrollbar">
-          <div className="inline-flex gap-1">
+          <div className="inline-flex gap-[3px]">
             {heatmapData.map((week, wIdx) => (
-              <div key={wIdx} className="flex flex-col gap-1">
+              <div key={wIdx} className="flex flex-col gap-[3px]">
                 {week.map((cell, dIdx) => (
                   <div
                     key={dIdx}
-                    onMouseEnter={() => setHoveredCell({ week: wIdx, day: dIdx, count: cell.count, dateStr: cell.dateStr })}
+                    onMouseEnter={() => setHoveredCell({ count: cell.count, dateStr: cell.dateStr })}
                     onMouseLeave={() => setHoveredCell(null)}
-                    className={`w-2.5 h-2.5 rounded-xs border cursor-pointer transition-transform hover:scale-125 ${getHeatmapColor(cell.count)}`}
+                    style={{ backgroundColor: getHeatmapColor(cell.count) }}
+                    className="w-[11px] h-[11px] rounded-[2px] cursor-pointer transition-opacity hover:opacity-80"
                   />
                 ))}
               </div>
             ))}
           </div>
         </div>
+
+        {/* Legend */}
+        <div className="flex items-center justify-end gap-1.5 text-[11px] text-[var(--text-3)]">
+          <span>Less</span>
+          <span className="w-[10px] h-[10px] rounded-[2px] bg-[var(--bg-elevated)]" />
+          <span className="w-[10px] h-[10px] rounded-[2px] bg-[rgba(139,92,246,0.3)]" />
+          <span className="w-[10px] h-[10px] rounded-[2px] bg-[rgba(139,92,246,0.55)]" />
+          <span className="w-[10px] h-[10px] rounded-[2px] bg-[var(--accent)]" />
+          <span>More</span>
+        </div>
       </div>
 
-      {/* Recent Submissions Log */}
-      <div className="rounded-lg bg-white dark:bg-zinc-900 border border-slate-200/80 dark:border-zinc-800 shadow-xs overflow-hidden space-y-0">
-        <div className="px-4 py-3 border-b border-slate-200/80 dark:border-zinc-800 bg-slate-50/70 dark:bg-zinc-950/60 flex items-center justify-between">
-          <h2 className="text-xs font-semibold text-slate-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
-            Recent Practice Submissions
-          </h2>
-          <span className="text-[11px] text-slate-500 dark:text-zinc-400 font-mono">
-            {userSubmissions.length} total logged
+      {/* Recent Submissions Table (full width card) */}
+      <div className="card overflow-hidden">
+        <div className="px-5 py-4 border-b border-[var(--border)] flex items-center justify-between">
+          <div className="section-label">
+            Recent Submissions
+          </div>
+          <span className="text-[12px] text-[var(--text-3)] font-mono">
+            {userSubmissions.length} total
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs font-mono">
+          <table className="w-full text-left border-collapse text-[13px]">
             <thead>
-              <tr className="border-b border-slate-100 dark:border-zinc-800/80 text-[11px] text-slate-400 uppercase tracking-wider font-sans">
-                <th className="py-2.5 px-4">Problem</th>
-                <th className="py-2.5 px-4">Verdict</th>
-                <th className="py-2.5 px-4">Language</th>
-                <th className="py-2.5 px-4">Runtime</th>
-                <th className="py-2.5 px-4">Memory</th>
-                <th className="py-2.5 px-4 text-right">Time</th>
+              <tr className="border-b border-[var(--border)] section-label h-[36px]">
+                <th className="px-5">Problem</th>
+                <th className="px-5">Verdict</th>
+                <th className="px-5">Language</th>
+                <th className="px-5">Runtime</th>
+                <th className="px-5 text-right">Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-zinc-800/60">
-              {userSubmissions.slice(0, 5).map(sub => (
-                <tr 
-                  key={sub.id} 
-                  onClick={() => navigateToProblem(sub.problemId)}
-                  className="hover:bg-slate-50/80 dark:hover:bg-zinc-800/40 cursor-pointer transition-colors"
-                >
-                  <td className="py-2.5 px-4 font-sans font-medium text-slate-900 dark:text-zinc-100">
-                    <span className="hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1">
-                      {sub.problemTitle}
-                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4">
-                    <VerdictBadge verdict={sub.verdict} size="sm" />
-                  </td>
-                  <td className="py-2.5 px-4 uppercase text-slate-600 dark:text-zinc-400 text-[11px]">
-                    {sub.language}
-                  </td>
-                  <td className="py-2.5 px-4 text-slate-800 dark:text-zinc-200">
-                    {sub.executionTimeMs} ms
-                  </td>
-                  <td className="py-2.5 px-4 text-slate-800 dark:text-zinc-200">
-                    {(sub.memoryKb / 1024).toFixed(1)} MB
-                  </td>
-                  <td className="py-2.5 px-4 text-right text-slate-400 text-[11px]">
-                    {new Date(sub.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <tbody className="divide-y divide-[var(--border)]">
+              {userSubmissions.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-[13px] text-[var(--text-3)]">
+                    No submissions yet
                   </td>
                 </tr>
-              ))}
+              ) : (
+                userSubmissions.slice(0, 5).map((sub, idx) => (
+                  <tr 
+                    key={sub.id} 
+                    onClick={() => navigateToProblem(sub.problemId)}
+                    className={`h-[52px] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors ${
+                      idx % 2 === 1 ? 'bg-[var(--bg-card)]' : 'bg-transparent'
+                    }`}
+                  >
+                    <td className="px-5 font-medium text-[var(--text-1)]">
+                      <span className="hover:text-[var(--accent)] transition-colors">
+                        {sub.problemTitle.replace(/^prob-\d+\.\s*/i, '')}
+                      </span>
+                    </td>
+                    <td className="px-5">
+                      <VerdictBadge verdict={sub.verdict} />
+                    </td>
+                    <td className="px-5 uppercase text-[var(--text-2)] text-[12px] font-mono">
+                      {sub.language}
+                    </td>
+                    <td className="px-5 text-[var(--text-2)] font-mono text-[12px]">
+                      {sub.executionTimeMs}ms
+                    </td>
+                    <td className="px-5 text-right text-[var(--text-3)] text-[12px]">
+                      {new Date(sub.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

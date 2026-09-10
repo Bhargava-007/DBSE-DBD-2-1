@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
 import type { Problem, Submission } from '../../types/judge';
-import { DifficultyBadge } from '../common/DifficultyBadge';
 import { VerdictBadge } from '../common/VerdictBadge';
 import { 
-  FileText, 
   History, 
   Lightbulb, 
+  HelpCircle,
   Clock, 
   Cpu, 
-  User, 
-  Tag,
-  ArrowUpRight
+  Code2
 } from 'lucide-react';
 
 interface Props {
@@ -24,129 +21,150 @@ export const DescriptionPane: React.FC<Props> = ({
   submissions,
   onSelectSubmissionCode 
 }) => {
-  const [activeTab, setActiveTab] = useState<'description' | 'submissions' | 'editorial'>('description');
+  const [activeTab, setActiveTab] = useState<'statement' | 'submissions' | 'solution' | 'help'>('statement');
   const [viewingSubmission, setViewingSubmission] = useState<Submission | null>(null);
 
   const problemSubmissions = submissions.filter(s => s.problemId === problem.id);
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg shadow-xs overflow-hidden">
+    <div className="h-full flex flex-col bg-[var(--bg-card)] text-[var(--text-1)] overflow-hidden font-sans transition-colors">
       
-      {/* Pane Tabs Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 bg-slate-50/80 dark:bg-zinc-950/70 px-3 py-1.5 shrink-0 select-none">
-        <div className="flex items-center gap-1">
+      {/* Top Tab Bar */}
+      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3 shrink-0 select-none">
+        
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-1.5">
           <button
-            onClick={() => { setActiveTab('description'); setViewingSubmission(null); }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'description'
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-50 shadow-xs font-semibold border border-slate-200 dark:border-zinc-700'
-                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+            onClick={() => { setActiveTab('statement'); setViewingSubmission(null); }}
+            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+              activeTab === 'statement'
+                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Description</span>
+            <span>Statement</span>
           </button>
 
           <button
             onClick={() => setActiveTab('submissions')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+            className={`h-7 flex items-center gap-1.5 px-3 rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
               activeTab === 'submissions'
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-50 shadow-xs font-semibold border border-slate-200 dark:border-zinc-700'
-                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
             }`}
           >
-            <History className="w-3.5 h-3.5" />
             <span>Submissions</span>
             {problemSubmissions.length > 0 && (
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-zinc-700 text-slate-700 dark:text-zinc-300 ml-0.5">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[var(--bg-canvas)] text-[var(--text-2)] border border-[var(--border)]">
                 {problemSubmissions.length}
               </span>
             )}
           </button>
 
           <button
-            onClick={() => { setActiveTab('editorial'); setViewingSubmission(null); }}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-              activeTab === 'editorial'
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-50 shadow-xs font-semibold border border-slate-200 dark:border-zinc-700'
-                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+            onClick={() => { setActiveTab('solution'); setViewingSubmission(null); }}
+            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+              activeTab === 'solution'
+                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
             }`}
           >
-            <Lightbulb className="w-3.5 h-3.5" />
-            <span>Editorial</span>
+            <span>Solution</span>
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('help'); setViewingSubmission(null); }}
+            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+              activeTab === 'help'
+                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
+            }`}
+          >
+            <span>Help</span>
           </button>
         </div>
 
-        {/* Runtime & Memory Limits info */}
-        <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-zinc-400">
+        {/* Limits info */}
+        <div className="hidden sm:flex items-center gap-2.5 text-[11px] font-mono text-[var(--text-3)]">
           <span className="flex items-center gap-1">
-            <Clock className="w-3 h-3 text-slate-400" /> {problem.timeLimitMs}ms
+            <Clock className="w-3 h-3 text-[var(--text-3)]" /> {problem.timeLimitMs}ms
           </span>
-          <span>•</span>
+          <span>·</span>
           <span className="flex items-center gap-1">
-            <Cpu className="w-3 h-3 text-slate-400" /> {problem.memoryLimitMb}MB
+            <Cpu className="w-3 h-3 text-[var(--text-3)]" /> {problem.memoryLimitMb}MB
           </span>
         </div>
       </div>
 
-      {/* Pane Content Area with 14px base font */}
-      <div className="flex-1 overflow-y-auto p-5 text-sm leading-relaxed space-y-6">
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-5 text-[13px] leading-relaxed space-y-6">
         
-        {/* Description Tab */}
-        {activeTab === 'description' && (
+        {/* Tab 1: Statement */}
+        {activeTab === 'statement' && (
           <div className="space-y-6">
             
-            {/* Header: Title & Metadata */}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold text-slate-900 dark:text-zinc-50 tracking-tight">
-                  {problem.title}
-                </h1>
-                <DifficultyBadge difficulty={problem.difficulty} />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-slate-500 dark:text-zinc-400">
-                <span className="flex items-center gap-1 font-medium">
-                  <User className="w-3 h-3 text-slate-400" /> {problem.author}
-                </span>
-                <span>•</span>
-                <span>Acceptance: <strong className="font-mono text-slate-800 dark:text-zinc-200">{problem.acceptanceRate}%</strong></span>
-                <span>•</span>
-                <span>Submissions: <strong className="font-mono text-slate-800 dark:text-zinc-200">{problem.submissionsCount.toLocaleString()}</strong></span>
+            {/* Title & Author Meta */}
+            <div className="space-y-1.5 pb-3 border-b border-[var(--border)]">
+              <h1 className="text-[18px] font-semibold text-[var(--text-1)] tracking-tight">
+                {problem.title}
+              </h1>
+              <div className="flex flex-wrap items-center gap-3 text-[12px] text-[var(--text-2)]">
+                <span>Author: <strong className="text-[var(--text-1)] font-medium">{problem.author}</strong></span>
+                <span>·</span>
+                <span>Success Rate: <strong className="font-mono text-[var(--text-1)]">{problem.acceptanceRate}%</strong></span>
+                <span>·</span>
+                <span>Submissions: <strong className="font-mono text-[var(--text-1)]">{problem.submissionsCount.toLocaleString()}</strong></span>
               </div>
             </div>
 
-            {/* Problem Statement (14px font, highly readable) */}
-            <div className="text-slate-800 dark:text-zinc-200 text-sm leading-6 space-y-3 font-normal whitespace-pre-line border-t border-slate-100 dark:border-zinc-800/80 pt-4">
+            {/* Problem Description */}
+            <div className="text-[var(--text-1)] text-[13px] leading-6 space-y-3 font-normal whitespace-pre-line">
               {problem.description}
             </div>
 
+            {/* Constraints */}
+            <div className="space-y-2 pt-2">
+              <div className="section-label">
+                Constraints
+              </div>
+              <div className="p-3 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
+                <ul className="space-y-1 text-[12px] font-mono text-[var(--text-1)] pl-4 list-disc">
+                  {problem.constraints.map((constraint, idx) => (
+                    <li key={idx} className="leading-relaxed">
+                      <code>{constraint}</code>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
             {/* Sample Examples */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-semibold text-slate-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
+            <div className="space-y-4 pt-2">
+              <div className="section-label">
                 Sample Test Cases
-              </h3>
+              </div>
 
               {problem.sampleTestCases.map((tc, idx) => (
                 <div 
                   key={tc.id} 
-                  className="rounded-lg bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 overflow-hidden"
+                  className="rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] overflow-hidden"
                 >
-                  <div className="px-3.5 py-1.5 bg-slate-100/80 dark:bg-zinc-900 border-b border-slate-200 dark:border-zinc-800 flex items-center justify-between text-xs font-medium text-slate-600 dark:text-zinc-400">
-                    <span>Example {idx + 1}</span>
+                  <div className="px-3.5 py-1.5 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center justify-between text-[12px] font-medium text-[var(--text-2)]">
+                    <span className="font-medium text-[var(--text-1)]">Example {idx + 1}</span>
                   </div>
-                  <div className="p-3.5 font-mono space-y-2 text-xs">
+                  <div className="p-3.5 font-mono space-y-2.5 text-[12px]">
                     <div>
-                      <span className="text-slate-500 dark:text-zinc-400">Input: </span>
-                      <span className="text-slate-900 dark:text-zinc-100 font-semibold">{tc.input}</span>
+                      <span className="text-[var(--text-3)] font-sans text-[11px] block mb-1">Input:</span>
+                      <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-canvas)] text-[var(--text-1)] whitespace-pre-wrap border border-[var(--border)] overflow-x-auto">{tc.input}</pre>
                     </div>
                     <div>
-                      <span className="text-slate-500 dark:text-zinc-400">Output: </span>
-                      <span className="text-emerald-700 dark:text-emerald-400 font-bold">{tc.expectedOutput}</span>
+                      <span className="text-[var(--text-3)] font-sans text-[11px] block mb-1">Expected Output:</span>
+                      <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-canvas)] text-[var(--green)] whitespace-pre-wrap border border-[var(--border)] overflow-x-auto">{tc.expectedOutput}</pre>
                     </div>
                     {tc.explanation && (
-                      <div className="pt-2 text-slate-600 dark:text-zinc-400 font-sans text-xs italic border-t border-slate-200/60 dark:border-zinc-800/60">
-                        Explanation: {tc.explanation}
+                      <div className="text-[var(--text-2)] text-[12px] font-sans pt-1">
+                        <strong className="text-[var(--text-1)]">Explanation: </strong>
+                        {tc.explanation}
                       </div>
                     )}
                   </div>
@@ -154,115 +172,88 @@ export const DescriptionPane: React.FC<Props> = ({
               ))}
             </div>
 
-            {/* Constraints */}
-            <div className="space-y-2 border-t border-slate-100 dark:border-zinc-800/80 pt-4">
-              <h3 className="text-xs font-semibold text-slate-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
-                Constraints
-              </h3>
-              <ul className="list-disc list-inside space-y-1.5 text-xs text-slate-700 dark:text-zinc-300 font-mono">
-                {problem.constraints.map((c, i) => (
-                  <li key={i}>
-                    <code className="text-xs bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-slate-200 dark:border-zinc-700 text-slate-800 dark:text-zinc-200">
-                      {c}
-                    </code>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Topics & Tags */}
-            <div className="border-t border-slate-100 dark:border-zinc-800/80 pt-4 space-y-2">
-              <h3 className="text-xs font-semibold text-slate-500 dark:text-zinc-400 uppercase tracking-wider font-mono">
-                Topics & Categories
-              </h3>
+            {/* Tags */}
+            <div className="pt-2">
+              <div className="section-label mb-2">
+                Topics & Tags
+              </div>
               <div className="flex flex-wrap gap-1.5">
                 {problem.tags.map(tag => (
                   <span 
-                    key={tag}
-                    className="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300"
+                    key={tag} 
+                    className="tag-pill"
                   >
-                    <Tag className="w-3 h-3 text-slate-400" />
-                    {tag}
+                    #{tag}
                   </span>
                 ))}
               </div>
             </div>
+
           </div>
         )}
 
-        {/* Submissions Tab */}
+        {/* Tab 2: Submissions */}
         {activeTab === 'submissions' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-semibold text-slate-900 dark:text-zinc-100 uppercase tracking-wider font-mono">
-                Your Submissions ({problemSubmissions.length})
-              </h3>
+              <span className="text-[14px] font-semibold text-[var(--text-1)]">Your Problem Submissions</span>
+              <span className="text-[12px] text-[var(--text-3)]">{problemSubmissions.length} total</span>
             </div>
 
             {problemSubmissions.length === 0 ? (
-              <div className="py-12 text-center text-xs text-slate-500 dark:text-zinc-400 border border-dashed border-slate-200 dark:border-zinc-800 rounded-lg">
-                No submissions for this challenge yet. Click "Submit" to run your solution against the judging suite.
+              <div className="text-center py-12 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-2">
+                <History className="w-6 h-6 text-[var(--text-3)] mx-auto opacity-50" />
+                <div className="text-[13px] text-[var(--text-2)] font-medium">No submissions recorded for this challenge yet.</div>
+                <div className="text-[12px] text-[var(--text-3)]">Run or submit your solution to evaluate your code.</div>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {problemSubmissions.map(sub => (
-                  <div
+                  <div 
                     key={sub.id}
-                    onClick={() => setViewingSubmission(sub === viewingSubmission ? null : sub)}
-                    className="p-3.5 rounded-lg bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 hover:border-slate-300 dark:hover:border-zinc-700 cursor-pointer transition-colors space-y-2.5"
+                    className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors space-y-2.5"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <VerdictBadge verdict={sub.verdict} />
-                        <span className="font-mono text-xs font-medium uppercase px-2 py-0.5 rounded bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400">
+                        <span className="text-[12px] font-mono text-[var(--text-2)]">
                           {sub.language}
                         </span>
                       </div>
-                      <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">
+                      <span className="text-[11px] text-[var(--text-3)] font-mono">
                         {new Date(sub.submittedAt).toLocaleTimeString()}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-4 text-xs font-mono text-slate-600 dark:text-zinc-400">
-                      <span>Runtime: <strong className="text-slate-900 dark:text-zinc-100">{sub.executionTimeMs} ms</strong></span>
-                      <span>•</span>
-                      <span>Memory: <strong className="text-slate-900 dark:text-zinc-100">{(sub.memoryKb / 1024).toFixed(1)} MB</strong></span>
-                      {sub.testCasesPassed !== undefined && sub.totalTestCases && (
-                        <>
-                          <span>•</span>
-                          <span>Passed: <strong className={sub.verdict === 'Accepted' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>{sub.testCasesPassed}/{sub.totalTestCases}</strong></span>
-                        </>
+                    <div className="grid grid-cols-2 gap-2 text-[12px] font-mono text-[var(--text-2)] pt-1 border-t border-[var(--border)]">
+                      <div>Time: <strong className="text-[var(--text-1)]">{sub.executionTimeMs}ms</strong></div>
+                      <div>Memory: <strong className="text-[var(--text-1)]">{(sub.memoryKb / 1024).toFixed(1)}MB</strong></div>
+                    </div>
+
+                    <div className="pt-2 flex items-center justify-between">
+                      <button
+                        onClick={() => setViewingSubmission(viewingSubmission?.id === sub.id ? null : sub)}
+                        className="text-[12px] text-[var(--accent)] hover:underline font-medium"
+                      >
+                        {viewingSubmission?.id === sub.id ? 'Hide Code' : 'View Code'}
+                      </button>
+
+                      {onSelectSubmissionCode && (
+                        <button
+                          onClick={() => onSelectSubmissionCode(sub.code, sub.language)}
+                          className="flex items-center gap-1 text-[12px] text-[var(--green)] hover:underline font-medium"
+                        >
+                          <Code2 className="w-3 h-3" />
+                          <span>Load in Editor</span>
+                        </button>
                       )}
                     </div>
 
-                    {sub.errorMessage && (
-                      <div className="p-2.5 rounded-md bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-xs font-mono text-rose-700 dark:text-rose-300">
-                        {sub.errorMessage}
-                      </div>
-                    )}
-
-                    {/* Code inspection viewer */}
+                    {/* Expandable Code Inspector */}
                     {viewingSubmission?.id === sub.id && (
-                      <div className="mt-3 pt-3 border-t border-slate-200 dark:border-zinc-800 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-mono text-slate-500 dark:text-zinc-400">Submitted Code ({sub.id})</span>
-                          {onSelectSubmissionCode && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSelectSubmissionCode(sub.code, sub.language);
-                              }}
-                              className="text-xs font-medium px-2.5 py-1 rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 text-slate-700 dark:text-zinc-200 flex items-center gap-1"
-                            >
-                              <span>Load in Editor</span>
-                              <ArrowUpRight className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                        <pre className="p-3 rounded-md bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 font-mono text-xs text-slate-900 dark:text-zinc-100 overflow-x-auto">
-                          {sub.code}
-                        </pre>
-                      </div>
+                      <pre className="p-3 rounded-[var(--r-sm)] bg-[var(--bg-canvas)] text-[12px] font-mono text-[var(--text-1)] overflow-x-auto border border-[var(--border)] max-h-60 leading-5">
+                        {sub.code}
+                      </pre>
                     )}
                   </div>
                 ))}
@@ -271,28 +262,75 @@ export const DescriptionPane: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Editorial Tab */}
-        {activeTab === 'editorial' && (
-          <div className="space-y-5 text-sm">
-            <div className="border-b border-slate-200 dark:border-zinc-800 pb-3">
-              <h3 className="text-base font-bold text-slate-900 dark:text-zinc-100">Optimal Algorithmic Approach</h3>
-              <p className="text-xs font-mono text-slate-500 dark:text-zinc-400 mt-0.5">Asymptotic Complexity & Proof</p>
+        {/* Tab 3: Solution / Editorial */}
+        {activeTab === 'solution' && (
+          <div className="space-y-5">
+            <div className="space-y-1 pb-3 border-b border-[var(--border)]">
+              <h2 className="text-[15px] font-semibold text-[var(--text-1)] tracking-tight flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-[var(--amber)]" />
+                <span>Editorial & Optimal Solution</span>
+              </h2>
+              <p className="text-[12px] text-[var(--text-2)]">
+                Algorithmic approaches and complexity breakdown.
+              </p>
             </div>
 
-            <div className="space-y-4 text-slate-800 dark:text-zinc-200 leading-relaxed">
-              <p>
-                <strong className="text-slate-900 dark:text-zinc-100">Intuition:</strong> A brute-force search evaluates every candidate combination, resulting in <code className="text-xs font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">O(N²)</code> time. By employing an auxiliary hash map or two-pointer scan, we reduce the time complexity to <code className="text-xs font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">O(N)</code>.
-              </p>
-
-              <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 space-y-1.5 font-mono text-xs">
-                <div className="text-emerald-700 dark:text-emerald-400 font-semibold">// Complexity Guarantees</div>
-                <div>Time Complexity: <span className="text-slate-900 dark:text-zinc-100 font-bold">O(N)</span> — Single pass traversal</div>
-                <div>Space Complexity: <span className="text-slate-900 dark:text-zinc-100 font-bold">O(N)</span> — Hash map storage</div>
+            <div className="space-y-4 text-[13px] leading-relaxed text-[var(--text-2)]">
+              <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-2">
+                <h4 className="font-semibold text-[var(--text-1)] text-[13px]">Approach & Intuition</h4>
+                <p>
+                  To solve <strong className="text-[var(--text-1)]">{problem.title}</strong> efficiently within the {problem.timeLimitMs}ms time limit, optimal algorithms use hash indexing or two-pointer techniques to achieve linear time complexity.
+                </p>
               </div>
 
-              <p>
-                As we iterate over the elements, for each value <code className="text-xs font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">x</code>, we check whether its required complement exists in our map. If found, we return the stored pair. Otherwise, we record the element into our map in amortized <code className="text-xs font-mono bg-slate-100 dark:bg-zinc-800 px-1 py-0.5 rounded">O(1)</code> time.
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
+                  <div className="section-label mb-1">Time Complexity</div>
+                  <div className="font-mono text-[var(--green)] font-semibold text-[13px]">O(N) / O(log N)</div>
+                  <div className="text-[11px] text-[var(--text-3)] mt-1">Single pass hash lookup or divide-and-conquer</div>
+                </div>
+
+                <div className="p-3 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
+                  <div className="section-label mb-1">Space Complexity</div>
+                  <div className="font-mono text-[var(--accent)] font-semibold text-[13px]">O(N) auxiliary</div>
+                  <div className="text-[11px] text-[var(--text-3)] mt-1">Under the {problem.memoryLimitMb}MB threshold</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Help & Shortcuts */}
+        {activeTab === 'help' && (
+          <div className="space-y-5">
+            <div className="space-y-1 pb-3 border-b border-[var(--border)]">
+              <h2 className="text-[15px] font-semibold text-[var(--text-1)] tracking-tight flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-[var(--accent)]" />
+                <span>Shortcuts & Platform Help</span>
+              </h2>
+              <p className="text-[12px] text-[var(--text-2)]">
+                Keybindings and execution tips for competitive programming.
               </p>
+            </div>
+
+            <div className="space-y-2.5">
+              <div className="section-label">
+                Keyboard Shortcuts
+              </div>
+              <div className="space-y-1.5 font-mono text-[12px]">
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)] font-sans">Run Test Cases</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)]">Ctrl + Enter</kbd>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)] font-sans">Submit Solution</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)]">Ctrl + Shift + Enter</kbd>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)] font-sans">Command Palette</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)]">Ctrl + K</kbd>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -301,4 +339,5 @@ export const DescriptionPane: React.FC<Props> = ({
     </div>
   );
 };
+
 

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import type { Problem, TestCaseResult, TestCase, Submission } from '../../types/judge';
 import { VerdictBadge } from '../common/VerdictBadge';
 import { 
-  Terminal, 
   Clock, 
   Cpu, 
   Trash2, 
@@ -10,7 +9,6 @@ import {
   XCircle, 
   Loader2, 
   ShieldAlert,
-  ChevronUp,
   ChevronDown
 } from 'lucide-react';
 
@@ -35,20 +33,18 @@ export const ConsoleRunner: React.FC<Props> = ({
   customInput,
   onCustomInputChange,
   isOpen,
+  onToggleOpen,
 }) => {
   // activeTab: -2 = Verdict, -1 = Custom Input, 0..N = Sample Test Case index
   const [activeTab, setActiveTab] = useState<number>(0);
-  const [activeSubTab, setActiveSubTab] = useState<'output' | 'stdout'>('output');
-  const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
-  // Auto-switch to verdict tab when submission starts or finishes
+  // Auto-switch to verdict tab when submission or run starts/finishes
   useEffect(() => {
     if (isSubmitting || lastSubmission) {
       setActiveTab(-2);
     }
   }, [isSubmitting, lastSubmission]);
 
-  // Auto-switch to testcase 0 when runCode completes
   useEffect(() => {
     if (results && !isSubmitting) {
       if (activeTab === -2) {
@@ -64,45 +60,47 @@ export const ConsoleRunner: React.FC<Props> = ({
   const currentTestCase: TestCase | undefined = (!isVerdictTab && !isCustomInputTab) 
     ? problem.sampleTestCases[activeTab] 
     : undefined;
+
+  const sampleResults = results?.filter(r => r.testCaseId !== 'custom-input') || [];
+  const customResult = results?.find(r => r.testCaseId === 'custom-input');
+
   const currentResult: TestCaseResult | undefined = (!isVerdictTab && !isCustomInputTab)
-    ? results?.[activeTab]
+    ? (results?.find(r => currentTestCase && r.testCaseId === currentTestCase.id) || sampleResults[activeTab])
     : isCustomInputTab 
-      ? results?.find(r => r.testCaseId === 'custom-input')
+      ? customResult
       : undefined;
 
   return (
-    <div className={`bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-lg shadow-sm overflow-hidden flex flex-col shrink-0 transition-all duration-150 ${
-      isExpanded ? 'h-96' : 'h-64'
-    }`}>
+    <div className="h-full flex flex-col bg-[var(--bg-card)] text-[var(--text-1)] overflow-hidden font-sans border-t border-[var(--border)] transition-colors">
       
-      {/* Console Tabs Header */}
-      <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 bg-slate-50/90 dark:bg-zinc-950/80 px-3 py-1.5 shrink-0 select-none">
+      {/* Console Header Tabs */}
+      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3 shrink-0 select-none">
         
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           
-          {/* Submission Verdict Tab (shows when a submission exists or is evaluating) */}
+          {/* Submission Verdict Tab */}
           {(lastSubmission || isSubmitting) && (
             <button
               onClick={() => setActiveTab(-2)}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
+              className={`h-7 flex items-center gap-1.5 px-2.5 rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
                 isVerdictTab
-                  ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-50 shadow-xs font-semibold border border-slate-200 dark:border-zinc-700'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  ? 'bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--accent-border)] font-semibold shadow-xs'
+                  : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
               }`}
             >
               {isSubmitting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 dark:text-blue-400" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--accent)]" />
               ) : lastSubmission?.verdict === 'Accepted' ? (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[var(--green)]" />
               ) : (
-                <XCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                <XCircle className="w-3.5 h-3.5 text-[var(--red)]" />
               )}
               <span>Verdict</span>
               {lastSubmission && !isSubmitting && (
-                <span className={`text-[10px] font-mono font-bold px-1 rounded ${
+                <span className={`text-[10px] font-mono px-1 rounded ${
                   lastSubmission.verdict === 'Accepted' 
-                    ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60' 
-                    : 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/60'
+                    ? 'text-[var(--green)] bg-[var(--green-dim)]' 
+                    : 'text-[var(--red)] bg-[var(--red-dim)]'
                 }`}>
                   {lastSubmission.verdict === 'Accepted' ? 'AC' : 'WA'}
                 </span>
@@ -110,164 +108,129 @@ export const ConsoleRunner: React.FC<Props> = ({
             </button>
           )}
 
-          {/* Divider */}
-          {(lastSubmission || isSubmitting) && (
-            <span className="text-slate-300 dark:text-zinc-700">|</span>
-          )}
-
-          <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-zinc-400 mr-1 shrink-0">
-            <Terminal className="w-3.5 h-3.5 text-slate-400" />
-            <span className="hidden sm:inline">Cases:</span>
-          </div>
-
-          {/* Sample test cases buttons */}
+          {/* Test cases tab pills */}
           {problem.sampleTestCases.map((tc, idx) => {
-            const res = results?.[idx];
+            const res = results?.find(r => r.testCaseId === tc.id) || sampleResults[idx];
             const isSelected = activeTab === idx;
             return (
               <button
                 key={tc.id}
                 onClick={() => setActiveTab(idx)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono transition-colors shrink-0 ${
+                className={`h-7 flex items-center gap-1.5 px-2.5 rounded-[var(--r-md)] text-[12px] font-mono cursor-pointer transition-colors shrink-0 ${
                   isSelected
-                    ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-50 shadow-xs font-semibold border border-slate-200 dark:border-zinc-700'
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                    ? 'bg-[var(--bg-elevated)] text-[var(--text-1)] font-semibold border border-[var(--border)] shadow-xs'
+                    : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
                 }`}
               >
                 <span>Case {idx + 1}</span>
                 {res && (
                   res.passed ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)]" />
                   ) : (
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--red)]" />
                   )
                 )}
               </button>
             );
           })}
 
-          {/* Custom Input Tab */}
+          {/* Test against Custom Input */}
           <button
             onClick={() => setActiveTab(-1)}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-mono transition-colors shrink-0 ${
+            className={`h-7 flex items-center gap-1.5 px-2.5 rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors shrink-0 ${
               isCustomInputTab
-                ? 'bg-white dark:bg-zinc-800 text-slate-900 dark:text-zinc-50 shadow-xs font-semibold border border-slate-200 dark:border-zinc-700'
-                : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                ? 'bg-[var(--bg-elevated)] text-[var(--text-1)] font-semibold border border-[var(--border)] shadow-xs'
+                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
             }`}
           >
-            <span>+ Custom</span>
-            {results?.some(r => r.testCaseId === 'custom-input') && (
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-            )}
+            <span>+ Custom Input</span>
+            {customResult ? (
+              <span className={`w-1.5 h-1.5 rounded-full ${customResult.passed ? 'bg-[var(--green)]' : 'bg-[var(--red)]'}`} />
+            ) : customInput.trim().length > 0 ? (
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]" />
+            ) : null}
           </button>
         </div>
 
-        {/* Right side tools */}
-        <div className="flex items-center gap-1.5">
-          {/* Subtab toggle (Output vs Stdout) for test cases */}
-          {!isVerdictTab && results && (
-            <div className="flex items-center bg-slate-200/70 dark:bg-zinc-800 p-0.5 rounded-md text-[11px]">
-              <button
-                onClick={() => setActiveSubTab('output')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeSubTab === 'output' 
-                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-medium shadow-xs' 
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
-                }`}
-              >
-                Output
-              </button>
-              <button
-                onClick={() => setActiveSubTab('stdout')}
-                className={`px-2 py-0.5 rounded transition-colors ${
-                  activeSubTab === 'stdout' 
-                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 font-medium shadow-xs' 
-                    : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900'
-                }`}
-              >
-                Stdout
-              </button>
-            </div>
-          )}
-
-          {/* Expand / Collapse Height Toggle */}
+        {/* Collapse toggle */}
+        {onToggleOpen && (
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            title={isExpanded ? 'Collapse Height' : 'Expand Height'}
-            className="p-1 rounded text-slate-400 hover:text-slate-700 dark:hover:text-zinc-200 hover:bg-slate-200/60 dark:hover:bg-zinc-800 transition-colors"
+            onClick={onToggleOpen}
+            className="p-1 rounded text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors"
+            title="Toggle Console"
           >
-            {isExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
-        </div>
+        )}
       </div>
 
-      {/* Console Body */}
-      <div className="flex-1 overflow-y-auto p-4 font-mono text-xs bg-white dark:bg-zinc-900">
+      {/* Console Drawer Body */}
+      <div className="flex-1 overflow-y-auto p-4 text-[12px] font-mono space-y-4 bg-[var(--bg-canvas)]">
         
-        {/* State: Code Running / Evaluating */}
-        {isRunning && (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-zinc-400 space-y-2 py-8">
-            <Loader2 className="w-5 h-5 animate-spin text-blue-600 dark:text-blue-400" />
-            <span className="font-sans text-xs">Evaluating test cases in sandboxed container...</span>
-          </div>
-        )}
-
-        {/* State: Submitting solution */}
-        {isSubmitting && (
-          <div className="h-full flex flex-col items-center justify-center text-slate-500 dark:text-zinc-400 space-y-3 py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
-            <div className="text-center font-sans">
-              <p className="text-xs font-semibold text-slate-900 dark:text-zinc-100">Judging Submission</p>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 mt-0.5">Running against complete hidden test suite in isolated runner...</p>
+        {/* State A: Running / Submitting In-Flight Loader */}
+        {(isRunning || isSubmitting) && (
+          <div className="flex flex-col items-center justify-center py-8 space-y-3 font-sans">
+            <Loader2 className="w-6 h-6 text-[var(--accent)] animate-spin" />
+            <div className="text-center">
+              <div className="text-[var(--text-1)] font-medium text-[13px]">
+                {isSubmitting ? 'Evaluating submission...' : 'Running solution on test cases...'}
+              </div>
+              <div className="text-[var(--text-3)] text-[12px] mt-0.5">
+                Executing inside isolated worker runtime
+              </div>
             </div>
           </div>
         )}
 
-        {/* Tab Content: Submission Verdict */}
+        {/* State B: Verdict View */}
         {!isRunning && !isSubmitting && isVerdictTab && lastSubmission && (
           <div className="space-y-4 font-sans">
-            {/* Verdict Header banner */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-zinc-800">
-              <div className="flex items-center gap-2.5">
-                <VerdictBadge verdict={lastSubmission.verdict} size="md" />
-                <span className="text-xs font-semibold text-slate-900 dark:text-zinc-100 font-mono">
-                  {lastSubmission.testCasesPassed} / {lastSubmission.totalTestCases} Testcases Passed
-                </span>
+            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-[var(--r-md)] bg-[var(--bg-card)] border border-[var(--border)]">
+              <div className="flex items-center gap-3">
+                <VerdictBadge verdict={lastSubmission.verdict} />
+                <div>
+                  <div className="text-[var(--text-1)] font-semibold text-[14px]">
+                    {lastSubmission.testCasesPassed ?? (lastSubmission.verdict === 'Accepted' ? 3 : 0)} / {lastSubmission.totalTestCases ?? 3} Testcases Passed
+                  </div>
+                  <div className="text-[var(--text-3)] text-[11px] font-mono mt-0.5">
+                    Evaluated at {new Date(lastSubmission.submittedAt).toLocaleTimeString()}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-mono text-slate-600 dark:text-zinc-400">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <strong className="text-slate-900 dark:text-zinc-100">{lastSubmission.executionTimeMs} ms</strong>
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Cpu className="w-3.5 h-3.5 text-slate-400" />
-                  <strong className="text-slate-900 dark:text-zinc-100">{(lastSubmission.memoryKb / 1024).toFixed(1)} MB</strong>
-                </span>
-                <span>•</span>
-                <span className="uppercase text-[11px] font-semibold text-slate-500">
+              <div className="flex items-center gap-4 text-[12px] font-mono text-[var(--text-2)]">
+                <div className="flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                  <span>{lastSubmission.executionTimeMs} ms</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Cpu className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                  <span>{(lastSubmission.memoryKb / 1024).toFixed(1)} MB</span>
+                </div>
+                <div className="text-[var(--text-1)] font-mono text-[11px]">
                   {lastSubmission.language}
-                </span>
+                </div>
               </div>
             </div>
 
-            {/* Error Message if failed */}
+            {/* Error Diagnostics if compilation or runtime failed */}
             {lastSubmission.errorMessage && (
-              <div className="p-3 rounded-md bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 font-mono text-xs text-rose-800 dark:text-rose-300 space-y-1">
-                <div className="font-semibold flex items-center gap-1.5 font-sans text-xs">
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+              <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--red-dim)] border border-[var(--red)]/20 space-y-1.5 font-mono">
+                <div className="flex items-center gap-1.5 text-[12px] font-medium text-[var(--red)]">
+                  <ShieldAlert className="w-4 h-4" />
                   <span>Execution Diagnostics:</span>
                 </div>
-                <p className="text-[11px] whitespace-pre-wrap">{lastSubmission.errorMessage}</p>
+                <pre className="text-[12px] text-[var(--red)] whitespace-pre-wrap leading-relaxed">
+                  {lastSubmission.errorMessage}
+                </pre>
               </div>
             )}
 
-            {/* Stdout Output */}
+            {/* Telemetry Output */}
             {lastSubmission.stdout && (
-              <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 font-mono">Runner Telemetry:</span>
-                <pre className="p-2.5 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-[11px] text-slate-700 dark:text-zinc-300 font-mono whitespace-pre-wrap">
+              <div className="space-y-1 font-mono">
+                <span className="text-[var(--text-3)] text-[11px]">Runner Telemetry:</span>
+                <pre className="p-3 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[12px] text-[var(--text-1)] border border-[var(--border)] whitespace-pre-wrap">
                   {lastSubmission.stdout}
                 </pre>
               </div>
@@ -275,103 +238,146 @@ export const ConsoleRunner: React.FC<Props> = ({
           </div>
         )}
 
-        {/* Tab Content: Custom Input */}
+        {/* State C: Custom Input Editor */}
         {!isRunning && !isSubmitting && isCustomInputTab && (
-          <div className="space-y-3 h-full flex flex-col font-sans">
-            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-zinc-400">
-              <span>Custom Input (passed directly via stdin to user program):</span>
-              <button 
-                onClick={() => onCustomInputChange('')} 
-                className="text-slate-400 hover:text-rose-600 flex items-center gap-1 text-[11px] transition-colors"
-              >
-                <Trash2 className="w-3 h-3" /> Clear
-              </button>
+          <div className="space-y-3 font-sans">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] font-medium text-[var(--text-1)]">Standard Input (stdin):</span>
+              {customInput && (
+                <button
+                  onClick={() => onCustomInputChange('')}
+                  className="flex items-center gap-1 text-[11px] text-[var(--text-3)] hover:text-[var(--red)] transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  <span>Clear Input</span>
+                </button>
+              )}
             </div>
+
             <textarea
               value={customInput}
               onChange={(e) => onCustomInputChange(e.target.value)}
-              placeholder="e.g. nums = [2, 7, 11, 15], target = 9"
-              className="flex-1 min-h-[70px] w-full bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 focus:border-slate-400 dark:focus:border-zinc-600 rounded-md p-2.5 text-xs text-slate-900 dark:text-zinc-100 placeholder-slate-400 focus:outline-none resize-none font-mono"
+              placeholder="Paste custom standard input (stdin) for your program, e.g. 2 1 3 1 2 or nums = [2, 7, 11, 15], target = 9..."
+              className="w-full h-24 p-3 rounded-[var(--r-md)] bg-[var(--bg-card)] text-[var(--text-1)] font-mono text-[12px] border border-[var(--border)] focus:border-[var(--accent)] focus:outline-none transition-colors resize-none"
             />
-            {currentResult && (
-              <div className="p-2.5 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 font-mono text-xs space-y-1">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Execution Output:</span>
-                <p className="text-emerald-700 dark:text-emerald-400 font-medium">{currentResult.actualOutput}</p>
-                <div className="text-[10px] text-slate-400">Time: {currentResult.executionTimeMs}ms • Memory: {((currentResult.memoryKb || 0) / 1024).toFixed(1)} MB</div>
+
+            {currentResult ? (
+              <div className="space-y-3 font-mono pt-1">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-[12px]">
+                    <span className="text-[var(--text-2)] font-sans font-medium">Standard Output:</span>
+                    <div className="flex items-center gap-3 text-[11px] text-[var(--text-3)]">
+                      <span>CPU: <strong className="text-[var(--text-1)]">{currentResult.executionTimeMs}ms</strong></span>
+                      <span>·</span>
+                      <span>Memory: <strong className="text-[var(--text-1)]">{(currentResult.memoryKb ? currentResult.memoryKb / 1024 : 0).toFixed(1)}MB</strong></span>
+                    </div>
+                  </div>
+                  <pre className="p-3 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[13px] text-[var(--green)] border border-[var(--border)] whitespace-pre-wrap font-semibold">
+                    {currentResult.actualOutput || '(No standard output generated)'}
+                  </pre>
+                </div>
+
+                {currentResult.stdout && (
+                  <div className="space-y-1">
+                    <span className="text-[var(--text-3)] text-[11px]">Program Telemetry / Debug:</span>
+                    <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[11px] text-[var(--text-2)] border border-[var(--border)] whitespace-pre-wrap">
+                      {currentResult.stdout}
+                    </pre>
+                  </div>
+                )}
+
+                {currentResult.error && (
+                  <div className="p-2.5 rounded-[var(--r-sm)] bg-[var(--red-dim)] border border-[var(--red)]/20 space-y-1">
+                    <span className="text-[11px] font-semibold text-[var(--red)]">Execution Error:</span>
+                    <pre className="text-[12px] text-[var(--red)] whitespace-pre-wrap">
+                      {currentResult.error}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 rounded-[var(--r-sm)] bg-[var(--bg-card)] border border-[var(--border)] text-[11px] text-[var(--text-3)] font-sans text-center">
+                Click <strong className="text-[var(--text-1)]">Run</strong> (Ctrl+Enter) to evaluate your code on this custom input.
               </div>
             )}
           </div>
         )}
 
-        {/* Tab Content: Sample Test Case Output */}
-        {!isRunning && !isSubmitting && !isVerdictTab && !isCustomInputTab && (
+        {/* State D: Sample Test Cases View */}
+        {!isRunning && !isSubmitting && !isVerdictTab && !isCustomInputTab && currentTestCase && (
           <div className="space-y-3 font-mono">
-            {/* Input display */}
+            
+            {/* Input Box */}
             <div className="space-y-1">
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 font-sans">Input</span>
-              <div className="p-2 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 text-xs">
-                {currentTestCase?.input}
+              <div className="text-[var(--text-3)] font-sans text-[11px]">Input:</div>
+              <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)] whitespace-pre-wrap">
+                {currentTestCase.input}
+              </pre>
+            </div>
+
+            {/* Expected vs Actual Output */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <div className="text-[var(--text-3)] font-sans text-[11px]">Expected Output:</div>
+                <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[var(--green)] border border-[var(--border)] whitespace-pre-wrap">
+                  {currentTestCase.expectedOutput}
+                </pre>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px] font-sans text-[var(--text-3)]">
+                  <span>Actual Output:</span>
+                  {currentResult && (
+                    <span className={`text-[10px] font-medium px-1.5 rounded ${
+                      currentResult.passed 
+                        ? 'text-[var(--green)] bg-[var(--green-dim)]' 
+                        : 'text-[var(--red)] bg-[var(--red-dim)]'
+                    }`}>
+                      {currentResult.passed ? 'PASSED' : 'WRONG ANSWER'}
+                    </span>
+                  )}
+                </div>
+                <pre className={`p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[12px] border whitespace-pre-wrap ${
+                  currentResult?.passed 
+                    ? 'text-[var(--green)] border-[var(--green)]/30' 
+                    : currentResult 
+                    ? 'text-[var(--red)] border-[var(--red)]/30' 
+                    : 'text-[var(--text-3)] border-[var(--border)]'
+                }`}>
+                  {currentResult ? (currentResult.actualOutput || '(Empty output)') : 'Run code to see output.'}
+                </pre>
               </div>
             </div>
 
-            {/* Test Results comparison */}
-            {activeSubTab === 'output' ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 font-sans">Expected Output</span>
-                  <div className="p-2 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
-                    {currentTestCase?.expectedOutput}
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between font-sans">
-                    <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400">Actual Output</span>
-                    {currentResult && (
-                      <span className={`text-[11px] font-bold ${currentResult.passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {currentResult.passed ? '✓ Passed' : '✗ Failed'}
-                      </span>
-                    )}
-                  </div>
-                  <div className={`p-2 rounded-md border text-xs font-mono ${
-                    currentResult 
-                      ? currentResult.passed 
-                        ? 'bg-emerald-50/60 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-800/40 dark:text-emerald-300' 
-                        : 'bg-rose-50/60 text-rose-800 border-rose-200 dark:bg-rose-950/20 dark:border-rose-800/40 dark:text-rose-300'
-                      : 'bg-slate-50 text-slate-400 border-slate-200 dark:bg-zinc-950 dark:border-zinc-800 dark:text-zinc-500'
-                  }`}>
-                    {currentResult ? currentResult.actualOutput || currentResult.error : '(Click "Run" to test)'}
-                  </div>
-                </div>
+            {/* Execution Telemetry if evaluated */}
+            {currentResult && (
+              <div className="flex items-center gap-4 text-[11px] font-mono text-[var(--text-3)] pt-1">
+                <span>CPU: <strong className="text-[var(--text-1)]">{currentResult.executionTimeMs}ms</strong></span>
+                <span>·</span>
+                <span>Memory: <strong className="text-[var(--text-1)]">{(currentResult.memoryKb ? currentResult.memoryKb / 1024 : 0).toFixed(1)}MB</strong></span>
               </div>
-            ) : (
-              /* Stdout tab */
-              <div className="space-y-1">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-zinc-400 font-sans">Standard Output</span>
-                <pre className="p-2.5 rounded-md bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 text-xs text-slate-700 dark:text-zinc-300 whitespace-pre-wrap">
-                  {currentResult?.stdout || 'No standard output produced.'}
+            )}
+
+            {currentResult?.stdout && (
+              <div className="space-y-1 font-mono pt-1">
+                <span className="text-[var(--text-3)] text-[11px]">Runner Telemetry:</span>
+                <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-card)] text-[11px] text-[var(--text-2)] border border-[var(--border)] whitespace-pre-wrap">
+                  {currentResult.stdout}
                 </pre>
               </div>
             )}
 
-            {/* Execution telemetry */}
-            {currentResult && (
-              <div className="flex items-center gap-3 text-[11px] text-slate-500 dark:text-zinc-400 border-t border-slate-100 dark:border-zinc-800 pt-2">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-slate-400" /> 
-                  Runtime: <strong className="text-slate-900 dark:text-zinc-100">{currentResult.executionTimeMs} ms</strong>
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Cpu className="w-3 h-3 text-slate-400" /> 
-                  Memory: <strong className="text-slate-900 dark:text-zinc-100">{((currentResult.memoryKb || 0) / 1024).toFixed(1)} MB</strong>
-                </span>
-              </div>
+            {currentResult?.error && (
+              <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--red-dim)] text-[12px] text-[var(--red)] border border-[var(--red)]/20 whitespace-pre-wrap">
+                {currentResult.error}
+              </pre>
             )}
           </div>
         )}
+
       </div>
     </div>
   );
 };
+
 

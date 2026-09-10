@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Send, ChevronUp, ChevronDown, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Play, Send, ChevronUp, ChevronDown, CheckCircle2, XCircle, Loader2, Terminal, Cpu, Clock } from 'lucide-react';
 import type { Submission, TestCaseResult } from '../../types/judge';
 
 interface Props {
@@ -28,91 +28,110 @@ export const BottomActionBar: React.FC<Props> = ({
   const cmdKey = isMac ? '⌘' : 'Ctrl';
 
   return (
-    <div className="h-12 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 flex items-center justify-between gap-4 shrink-0 shadow-xs select-none">
+    <div className="h-11 border-t border-[var(--border)] bg-[var(--bg-canvas)] px-4 flex items-center justify-between gap-4 shrink-0 select-none">
       
-      {/* Left: Console toggle */}
+      {/* Left: Console toggle & Quick telemetry results */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleConsole}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200/80 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-xs font-medium text-slate-700 dark:text-zinc-200 transition-colors"
+          className={`flex items-center gap-2 px-3 py-1 rounded-[var(--r-md)] text-[12px] font-medium transition-colors border ${
+            isConsoleOpen
+              ? 'bg-[var(--bg-hover)] text-[var(--text-1)] border-[var(--border-strong)]'
+              : 'bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] text-[var(--text-2)] border-[var(--border)]'
+          }`}
         >
+          <Terminal className="w-3.5 h-3.5 text-[var(--text-3)]" />
           <span>Console</span>
           {isConsoleOpen ? (
-            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronDown className="w-3.5 h-3.5 text-[var(--text-3)] ml-0.5" />
           ) : (
-            <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+            <ChevronUp className="w-3.5 h-3.5 text-[var(--text-3)] ml-0.5" />
           )}
         </button>
 
-        {/* Quick result pill */}
+        {/* Quick run summary pill */}
         {lastResults && !isRunning && !isSubmitting && (
-          <div className="hidden sm:flex items-center gap-1 text-[11px] font-medium font-mono">
+          <div className="hidden sm:flex items-center gap-1.5 text-[12px]">
             {allPassed ? (
-              <span className="flex items-center gap-1 text-emerald-700 dark:text-emerald-400">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Sample tests passed
+              <span className="badge badge-easy gap-1.5 py-1 px-2.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>All sample tests passed</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-rose-700 dark:text-rose-400">
-                <XCircle className="w-3.5 h-3.5" /> Sample tests failed
+              <span className="badge badge-hard gap-1.5 py-1 px-2.5">
+                <XCircle className="w-3.5 h-3.5" />
+                <span>Sample tests failed</span>
               </span>
             )}
           </div>
         )}
       </div>
 
-      {/* Center: Status telemetry */}
-      <div className="hidden md:flex items-center gap-2 text-xs font-mono text-slate-500 dark:text-zinc-400">
+      {/* Center: Live Status Indicator & Runtime State */}
+      <div className="hidden md:flex items-center gap-2 text-[12px] text-[var(--text-3)]">
         {isSubmitting ? (
-          <span className="flex items-center gap-1.5 text-slate-900 dark:text-zinc-100 font-sans">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 dark:text-blue-400" />
-            <span>Judging against full test suite...</span>
+          <span className="flex items-center gap-2 text-[var(--accent)]">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span className="font-medium">Evaluating across hidden test cases...</span>
           </span>
         ) : isRunning ? (
-          <span className="flex items-center gap-1.5 text-slate-700 dark:text-zinc-300 font-sans">
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-600 dark:text-blue-400" />
-            <span>Evaluating sample inputs...</span>
+          <span className="flex items-center gap-2 text-[var(--text-2)]">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <span className="font-medium">Executing code on sandbox runtime...</span>
           </span>
         ) : lastSubmission ? (
-          <span className="flex items-center gap-1.5">
-            <span>Verdict:</span>
-            <strong className={`font-semibold ${lastSubmission.verdict === 'Accepted' ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-              {lastSubmission.verdict} ({lastSubmission.executionTimeMs}ms)
-            </strong>
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-[var(--text-3)]">Verdict:</span>
+            <span className={`badge ${
+              lastSubmission.verdict === 'Accepted'
+                ? 'badge-easy'
+                : 'badge-hard'
+            }`}>
+              {lastSubmission.verdict === 'Accepted' ? <CheckCircle2 className="w-3 h-3 mr-1" /> : <XCircle className="w-3 h-3 mr-1" />}
+              <span>{lastSubmission.verdict}</span>
+            </span>
+            <span className="flex items-center gap-1 text-[11px] font-mono text-[var(--text-3)]">
+              <Clock className="w-3 h-3" /> {lastSubmission.executionTimeMs}ms
+            </span>
+            <span className="flex items-center gap-1 text-[11px] font-mono text-[var(--text-3)]">
+              <Cpu className="w-3 h-3" /> {(lastSubmission.memoryKb / 1024).toFixed(1)}MB
+            </span>
+          </div>
         ) : (
-          <span className="flex items-center gap-1.5 text-slate-400 dark:text-zinc-500 font-sans text-[11px]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <div className="flex items-center gap-2 text-[var(--text-3)] text-[12px]">
+            <span className="w-2 h-2 rounded-full bg-[var(--green)] inline-block" />
             <span>Sandbox Ready</span>
-          </span>
+          </div>
         )}
       </div>
 
-      {/* Right: Actions */}
+      {/* Right: Modern Run and Submit Action Buttons */}
       <div className="flex items-center gap-2">
-        {/* Run Code (Secondary) */}
+        
+        {/* Run Button (Secondary Elevated Button) */}
         <button
           onClick={onRun}
           disabled={isRunning || isSubmitting}
           title={`Run Code (${cmdKey} + Enter)`}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 hover:bg-slate-50 dark:hover:bg-zinc-700/80 text-xs font-medium text-slate-700 dark:text-zinc-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
+          className="btn-secondary !py-1.5 !px-3.5 !text-[12px] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isRunning ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--text-3)]" />
           ) : (
-            <Play className="w-3.5 h-3.5 text-slate-500 dark:text-zinc-400" />
+            <Play className="w-3.5 h-3.5 text-[var(--text-2)] fill-[var(--text-2)]" />
           )}
           <span>Run</span>
-          <kbd className="hidden lg:inline-flex items-center font-mono text-[10px] px-1 py-0.2 rounded bg-slate-100 dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-400 dark:text-zinc-400 ml-0.5">
-            {cmdKey}↵
+          <kbd className="hidden lg:inline text-[10px] font-mono text-[var(--text-3)] ml-1">
+            {cmdKey}+↵
           </kbd>
         </button>
 
-        {/* Submit Solution (Primary) */}
+        {/* Submit Button (Linear Primary Style) */}
         <button
           onClick={onSubmit}
           disabled={isRunning || isSubmitting}
           title={`Submit Solution (Shift + ${cmdKey} + Enter)`}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 dark:bg-zinc-100 dark:hover:bg-white text-xs font-semibold text-white dark:text-slate-900 shadow-xs disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          className="btn-primary !py-1.5 !px-4 !text-[12px] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isSubmitting ? (
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -120,9 +139,6 @@ export const BottomActionBar: React.FC<Props> = ({
             <Send className="w-3.5 h-3.5" />
           )}
           <span>Submit</span>
-          <kbd className="hidden lg:inline-flex items-center font-mono text-[10px] px-1 py-0.2 rounded bg-slate-800 text-slate-300 dark:bg-zinc-200 dark:text-zinc-700 ml-0.5">
-            ⇧{cmdKey}↵
-          </kbd>
         </button>
       </div>
     </div>

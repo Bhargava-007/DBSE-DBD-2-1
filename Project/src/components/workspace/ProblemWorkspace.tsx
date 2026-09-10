@@ -5,7 +5,21 @@ import { DescriptionPane } from './DescriptionPane';
 import { MonacoCodeEditor } from './MonacoCodeEditor';
 import { ConsoleRunner } from './ConsoleRunner';
 import { BottomActionBar } from './BottomActionBar';
-import { ChevronLeft, ChevronRight, FileText, Code2 } from 'lucide-react';
+import { DifficultyBadge } from '../common/DifficultyBadge';
+import { 
+  ArrowLeft,
+  ChevronLeft, 
+  ChevronRight, 
+  FileText, 
+  Code2, 
+  Bookmark, 
+  BookmarkCheck,
+  Maximize2,
+  Minimize2,
+  Columns,
+  Keyboard,
+  X
+} from 'lucide-react';
 
 export const ProblemWorkspace: React.FC = () => {
   const { 
@@ -13,13 +27,13 @@ export const ProblemWorkspace: React.FC = () => {
     problems, 
     submissions, 
     navigateToProblem, 
-    navigateToPage,
+    navigateToPage, 
     runCode, 
     submitSolution,
     isRunningCode,
     isSubmitting,
     lastRunResults,
-    lastSubmissionResult
+    lastSubmissionResult,
   } = useJudge();
 
   const [language, setLanguage] = useState<SupportedLanguage>('cpp');
@@ -31,14 +45,22 @@ export const ProblemWorkspace: React.FC = () => {
   });
   const [customInput, setCustomInput] = useState<string>('');
   const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(true);
+  const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
 
   // Responsive mobile tab ('desc' | 'editor')
   const [mobileTab, setMobileTab] = useState<'desc' | 'editor'>('desc');
 
-  // Draggable splitter percentage (desktop only, bounded between 25% and 75%)
-  const [splitPercent, setSplitPercent] = useState<number>(46);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  // Dual-axis Resizable Splitters
+  const [horizontalSplit, setHorizontalSplit] = useState<number>(46);
+  const [isDraggingH, setIsDraggingH] = useState<boolean>(false);
+  
+  const [verticalSplit, setVerticalSplit] = useState<number>(62);
+  const [isDraggingV, setIsDraggingV] = useState<boolean>(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const rightColumnRef = useRef<HTMLDivElement>(null);
 
   // Update starter code when active problem changes
   useEffect(() => {
@@ -85,7 +107,7 @@ export const ProblemWorkspace: React.FC = () => {
     submitSolution(activeProblem, language, currentCode);
   }, [isRunningCode, isSubmitting, submitSolution, activeProblem, language, currentCode]);
 
-  // Global workspace keyboard shortcuts (Cmd+Enter to Run, Cmd+Shift+Enter to Submit)
+  // Keyboard shortcuts (Cmd/Ctrl+Enter to Run, Cmd/Ctrl+Shift+Enter to Submit)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
@@ -103,122 +125,192 @@ export const ProblemWorkspace: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleRun, handleSubmit]);
 
-  // Splitter drag event handling
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
+  // Horizontal Dragging (Left / Right resize)
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging || !containerRef.current) return;
+    const handleMouseMoveH = (e: MouseEvent) => {
+      if (!isDraggingH || !containerRef.current) return;
       const rect = containerRef.current.getBoundingClientRect();
       const newPercent = ((e.clientX - rect.left) / rect.width) * 100;
-      // Clamp between 25% and 75%
-      if (newPercent >= 25 && newPercent <= 75) {
-        setSplitPercent(newPercent);
+      if (newPercent >= 20 && newPercent <= 80) {
+        setHorizontalSplit(newPercent);
       }
     };
 
-    const handleMouseUp = () => {
-      if (isDragging) {
-        setIsDragging(false);
-      }
+    const handleMouseUpH = () => {
+      if (isDraggingH) setIsDraggingH(false);
     };
 
-    if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+    if (isDraggingH) {
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      window.addEventListener('mousemove', handleMouseMoveH);
+      window.addEventListener('mouseup', handleMouseUpH);
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     }
+
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mousemove', handleMouseMoveH);
+      window.removeEventListener('mouseup', handleMouseUpH);
     };
-  }, [isDragging]);
+  }, [isDraggingH]);
+
+  // Vertical Dragging (Editor / Console resize)
+  useEffect(() => {
+    const handleMouseMoveV = (e: MouseEvent) => {
+      if (!isDraggingV || !rightColumnRef.current) return;
+      const rect = rightColumnRef.current.getBoundingClientRect();
+      const newPercent = ((e.clientY - rect.top) / rect.height) * 100;
+      if (newPercent >= 25 && newPercent <= 85) {
+        setVerticalSplit(newPercent);
+      }
+    };
+
+    const handleMouseUpV = () => {
+      if (isDraggingV) setIsDraggingV(false);
+    };
+
+    if (isDraggingV) {
+      document.body.style.cursor = 'row-resize';
+      document.body.style.userSelect = 'none';
+      window.addEventListener('mousemove', handleMouseMoveV);
+      window.addEventListener('mouseup', handleMouseUpV);
+    } else {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMoveV);
+      window.removeEventListener('mouseup', handleMouseUpV);
+    };
+  }, [isDraggingV]);
 
   const currentIndex = problems.findIndex(p => p.id === activeProblem.id);
   const prevProblem = currentIndex > 0 ? problems[currentIndex - 1] : null;
   const nextProblem = currentIndex < problems.length - 1 ? problems[currentIndex + 1] : null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-50 dark:bg-zinc-950 overflow-hidden select-none">
+    <div className={`flex flex-col ${isFullscreen ? 'fixed inset-0 z-50' : 'h-screen'} bg-[var(--bg-canvas)] text-[var(--text-1)] overflow-hidden select-none font-sans relative`}>
       
-      {/* Top Workspace Bar: Navigation & Quick Problem Switch */}
-      <div className="h-10 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 flex items-center justify-between shrink-0 text-xs shadow-2xs">
-        <div className="flex items-center gap-2.5">
+      {/* 36px Minimal Workspace Topbar */}
+      <div className="h-[36px] border-b border-[var(--border)] bg-[var(--bg-canvas)] px-3 flex items-center justify-between shrink-0 text-[13px] z-20">
+        {/* Left Section: Back, Problem Title, Difficulty & Bookmark */}
+        <div className="flex items-center gap-3">
           <button
             onClick={() => navigateToPage('problems')}
-            className="text-slate-500 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-zinc-100 flex items-center gap-1 font-medium transition-colors"
+            className="text-[var(--text-2)] hover:text-[var(--text-1)] text-[16px] p-1 rounded transition-colors flex items-center"
+            title="Back to Problems"
           >
-            <ChevronLeft className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Problems</span>
+            <ArrowLeft className="w-4 h-4" />
           </button>
-          <span className="text-slate-300 dark:text-zinc-700">/</span>
-          <div className="flex items-center gap-1.5 font-semibold text-slate-900 dark:text-zinc-100 truncate max-w-xs sm:max-w-md">
-            <span className="font-mono text-slate-400 dark:text-zinc-500 font-normal tabular-nums">#{activeProblem.id.replace('prob-', '')}.</span>
-            <span className="truncate">{activeProblem.title}</span>
+
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-[var(--text-1)] text-[13px] truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+              {activeProblem.title}
+            </span>
+            <DifficultyBadge difficulty={activeProblem.difficulty} />
           </div>
+
+          <button
+            onClick={() => setIsBookmarked(!isBookmarked)}
+            className={`p-1 rounded transition-colors ${
+              isBookmarked ? 'text-[var(--amber)]' : 'text-[var(--text-3)] hover:text-[var(--text-2)]'
+            }`}
+            title={isBookmarked ? 'Bookmarked' : 'Bookmark Problem'}
+          >
+            {isBookmarked ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+          </button>
         </div>
 
-        {/* Center: Mobile View Switcher (Visible only < 1024px) */}
-        <div className="flex lg:hidden items-center bg-slate-100 dark:bg-zinc-800 p-0.5 rounded-md border border-slate-200 dark:border-zinc-700">
+        {/* Center: Mobile Switcher Tabs */}
+        <div className="flex lg:hidden items-center bg-[var(--bg-elevated)] p-0.5 rounded-[var(--r-md)] border border-[var(--border)]">
           <button
             onClick={() => setMobileTab('desc')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[12px] font-medium transition-colors ${
               mobileTab === 'desc'
-                ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold'
-                : 'text-slate-600 dark:text-zinc-400'
+                ? 'bg-[var(--bg-card)] text-[var(--text-1)] shadow-sm'
+                : 'text-[var(--text-2)]'
             }`}
           >
-            <FileText className="w-3 h-3" />
+            <FileText className="w-3.5 h-3.5" />
             <span>Problem</span>
           </button>
           <button
             onClick={() => setMobileTab('editor')}
-            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[12px] font-medium transition-colors ${
               mobileTab === 'editor'
-                ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-zinc-100 shadow-2xs font-semibold'
-                : 'text-slate-600 dark:text-zinc-400'
+                ? 'bg-[var(--bg-card)] text-[var(--text-1)] shadow-sm'
+                : 'text-[var(--text-2)]'
             }`}
           >
-            <Code2 className="w-3 h-3" />
+            <Code2 className="w-3.5 h-3.5" />
             <span>Code</span>
           </button>
         </div>
 
-        {/* Previous / Next Problem buttons */}
-        <div className="flex items-center gap-1">
+        {/* Right Section: Prev/Next & Quick Tools */}
+        <div className="flex items-center gap-1.5 text-[var(--text-2)] text-[14px]">
+          
+          {/* Keyboard Shortcuts Trigger */}
+          <button
+            onClick={() => setShowShortcutsModal(true)}
+            className="p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
+            title="Keyboard Shortcuts"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Reset Panel Splits */}
+          <button
+            onClick={() => { setHorizontalSplit(48); setVerticalSplit(62); }}
+            className="hidden lg:flex p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
+            title="Reset split layout"
+          >
+            <Columns className="w-3.5 h-3.5" />
+          </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="hidden sm:flex p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Workspace'}
+          >
+            {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+          </button>
+
+          <div className="h-3.5 w-px bg-[var(--border)] mx-1" />
+
+          {/* Previous / Next Stepper */}
           <button
             disabled={!prevProblem}
             onClick={() => prevProblem && navigateToProblem(prevProblem.id)}
-            className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title={prevProblem ? `Previous Problem: ${prevProblem.title}` : undefined}
+            className="p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title={prevProblem ? `Previous: ${prevProblem.title}` : undefined}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             disabled={!nextProblem}
             onClick={() => nextProblem && navigateToProblem(nextProblem.id)}
-            className="p-1 rounded text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-800 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title={nextProblem ? `Next Problem: ${nextProblem.title}` : undefined}
+            className="p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title={nextProblem ? `Next: ${nextProblem.title}` : undefined}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Main Workspace Layout */}
+      {/* Main Workspace Layout with Dual-Axis Resizing */}
       <div 
         ref={containerRef}
-        className={`flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden p-2 gap-2 ${
-          isDragging ? 'cursor-col-resize select-none pointer-events-none' : ''
-        }`}
+        className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden bg-[var(--bg-canvas)] p-1 gap-1"
       >
-        
-        {/* Left Pane: Description & Editorial */}
+        {/* Left Panel: Problem Statement / Submissions / Editorial / Help */}
         <div 
-          style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${splitPercent}%` : '100%' }}
-          className={`h-full min-h-0 overflow-hidden ${
+          style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${horizontalSplit}%` : '100%' }}
+          className={`h-full min-h-0 overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-card)] ${
             mobileTab === 'desc' ? 'flex flex-col flex-1 lg:flex-none' : 'hidden lg:flex lg:flex-col'
           }`}
         >
@@ -229,24 +321,33 @@ export const ProblemWorkspace: React.FC = () => {
           />
         </div>
 
-        {/* Interactive Desktop Splitter Handle */}
+        {/* Resizable Horizontal Divider (Left / Right) */}
         <div
-          onMouseDown={handleMouseDown}
-          onDoubleClick={() => setSplitPercent(50)}
-          title="Drag to resize panels (Double click to center 50%)"
-          className="hidden lg:flex w-1.5 hover:w-2 hover:bg-slate-300 dark:hover:bg-zinc-700 bg-transparent cursor-col-resize items-center justify-center transition-all duration-100 group shrink-0 relative z-20"
+          onMouseDown={(e) => { e.preventDefault(); setIsDraggingH(true); }}
+          onDoubleClick={() => setHorizontalSplit(50)}
+          title="Drag to resize panels"
+          className="hidden lg:flex w-1.5 bg-transparent hover:bg-[var(--accent-dim)] active:bg-[var(--accent-dim)] cursor-col-resize items-center justify-center transition-colors group shrink-0 relative z-20 rounded"
         >
-          <div className="w-0.5 h-8 rounded-full bg-slate-300 dark:bg-zinc-700 group-hover:bg-slate-500 dark:group-hover:bg-zinc-400 transition-colors" />
+          <div className="flex flex-col gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
+            <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
+            <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
+          </div>
         </div>
 
-        {/* Right Pane: Code Editor & Console */}
+        {/* Right Panel: Editor (Top) & Testcase/Console (Bottom) */}
         <div 
-          style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${100 - splitPercent}%` : '100%' }}
-          className={`h-full min-h-0 flex flex-col gap-2 overflow-hidden ${
+          ref={rightColumnRef}
+          style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${100 - horizontalSplit}%` : '100%' }}
+          className={`h-full min-h-0 flex flex-col overflow-hidden gap-1 ${
             mobileTab === 'editor' ? 'flex flex-1 lg:flex-none' : 'hidden lg:flex'
           }`}
         >
-          <div className="flex-1 min-h-0 overflow-hidden">
+          {/* Top Half: Code Editor */}
+          <div 
+            style={{ height: isConsoleOpen ? `${verticalSplit}%` : '100%' }}
+            className="min-h-0 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-card)] transition-[height] duration-75"
+          >
             <MonacoCodeEditor
               language={language}
               onLanguageChange={setLanguage}
@@ -256,18 +357,41 @@ export const ProblemWorkspace: React.FC = () => {
             />
           </div>
 
-          {/* Inline Console Runner */}
-          <ConsoleRunner
-            problem={activeProblem}
-            results={lastRunResults}
-            isRunning={isRunningCode}
-            isSubmitting={isSubmitting}
-            lastSubmission={lastSubmissionResult}
-            customInput={customInput}
-            onCustomInputChange={setCustomInput}
-            isOpen={isConsoleOpen}
-            onToggleOpen={() => setIsConsoleOpen(!isConsoleOpen)}
-          />
+          {/* Resizable Vertical Divider (Editor / Console) */}
+          {isConsoleOpen && (
+            <div
+              onMouseDown={(e) => { e.preventDefault(); setIsDraggingV(true); }}
+              onDoubleClick={() => setVerticalSplit(60)}
+              title="Drag to resize console"
+              className="h-1.5 bg-transparent hover:bg-[var(--accent-dim)] active:bg-[var(--accent-dim)] cursor-row-resize flex items-center justify-center transition-colors group shrink-0 relative z-20 rounded"
+            >
+              <div className="flex gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
+                <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
+                <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Half: Test Cases / Custom Input / Verdict Console */}
+          {isConsoleOpen && (
+            <div 
+              style={{ height: `${100 - verticalSplit}%` }}
+              className="min-h-0 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-card)] transition-[height] duration-75"
+            >
+              <ConsoleRunner
+                problem={activeProblem}
+                results={lastRunResults}
+                isRunning={isRunningCode}
+                isSubmitting={isSubmitting}
+                lastSubmission={lastSubmissionResult}
+                customInput={customInput}
+                onCustomInputChange={setCustomInput}
+                isOpen={isConsoleOpen}
+                onToggleOpen={() => setIsConsoleOpen(!isConsoleOpen)}
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -283,7 +407,50 @@ export const ProblemWorkspace: React.FC = () => {
         lastSubmission={lastSubmissionResult}
       />
 
+      {/* Shortcuts Modal Dialog */}
+      {showShortcutsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-[var(--r-xl)] bg-[var(--bg-elevated)] border border-[var(--border-mid)] p-5 shadow-[var(--shadow-lg)] space-y-4 page-fade">
+            <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+              <div className="flex items-center gap-2">
+                <Keyboard className="w-4 h-4 text-[var(--accent)]" />
+                <h3 className="font-semibold text-[var(--text-1)] text-[14px]">Keyboard Shortcuts</h3>
+              </div>
+              <button 
+                onClick={() => setShowShortcutsModal(false)}
+                className="p-1 rounded text-[var(--text-3)] hover:text-[var(--text-1)]"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-2 text-[12px]">
+              <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
+                <span className="text-[var(--text-2)]">Run Code</span>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] font-mono text-[var(--text-1)]">Ctrl / ⌘ + Enter</kbd>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
+                <span className="text-[var(--text-2)]">Submit Solution</span>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] font-mono text-[var(--text-1)]">Ctrl / ⌘ + Shift + Enter</kbd>
+              </div>
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-[var(--text-2)]">Search / Command Palette</span>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] font-mono text-[var(--text-1)]">Ctrl / ⌘ + K</kbd>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowShortcutsModal(false)}
+              className="btn-secondary w-full justify-center !py-1.5 !text-[12px]"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+
 

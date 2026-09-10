@@ -9,7 +9,8 @@ export type Verdict =
   | 'Memory Limit Exceeded'
   | 'Runtime Error'
   | 'Compilation Error'
-  | 'Pending';
+  | 'Pending'
+  | 'Running';
 
 export interface TestCase {
   id: string;

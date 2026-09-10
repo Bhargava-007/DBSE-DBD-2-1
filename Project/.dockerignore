@@ -1,0 +1,7 @@
+node_modules
+dist
+backend
+.git
+.gitignore
+npm-debug.log
+.oxlintrc.json
