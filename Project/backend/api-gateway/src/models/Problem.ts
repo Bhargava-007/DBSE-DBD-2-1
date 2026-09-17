@@ -2,6 +2,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type SupportedLanguage = 'cpp' | 'python' | 'java' | 'javascript';
+export type ProblemStatus = 'draft' | 'published' | 'archived';
 
 export interface ITestCase {
   id?: string;
@@ -32,6 +33,7 @@ export interface IProblem extends Document {
   starterCode: IStarterCode;
   authorId?: Types.ObjectId;
   authorName?: string;
+  status: ProblemStatus;
   isPublished: boolean;
   submissionsCount: number;
   totalAccepted: number;
@@ -129,9 +131,15 @@ const ProblemSchema = new Schema<IProblem>(
       type: String,
       default: 'AlgoFlow Editorial',
     },
+    status: {
+      type: String,
+      enum: ['draft', 'published', 'archived'],
+      default: 'draft',
+      index: true,
+    },
     isPublished: {
       type: Boolean,
-      default: true,
+      default: false,
       index: true,
     },
     submissionsCount: {
@@ -152,6 +160,7 @@ const ProblemSchema = new Schema<IProblem>(
 ProblemSchema.index({ difficulty: 1 });
 ProblemSchema.index({ tags: 1 });
 ProblemSchema.index({ difficulty: 1, tags: 1 });
+ProblemSchema.index({ status: 1, createdAt: -1 });
 ProblemSchema.index({ isPublished: 1, createdAt: -1 });
 
 export const Problem = mongoose.model<IProblem>('Problem', ProblemSchema);

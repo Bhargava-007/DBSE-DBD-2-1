@@ -9,7 +9,7 @@ let socket: Socket | null = null;
  */
 export const getContestSocket = (): Socket => {
   if (!socket) {
-    const token = localStorage.getItem('token') || '';
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
     socket = io(CONTEST_WS_URL, {
       auth: {
@@ -42,7 +42,7 @@ export const getContestSocket = (): Socket => {
  */
 export const connectContestSocket = (): Socket => {
   const s = getContestSocket();
-  const token = localStorage.getItem('token') || '';
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token') || '';
 
   // Update auth token in case user logged in/switched accounts
   s.auth = { token };

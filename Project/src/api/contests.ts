@@ -27,6 +27,7 @@ export const normalizeContest = (raw: any): Contest => {
     problemIds,
     scoringMode: raw.scoringMode,
     bannerBadge: raw.bannerBadge || (status === 'Live' ? 'LIVE NOW • Division 1' : 'Rated (Div. 1 + Div. 2)'),
+    editorial: raw.editorial || '',
   };
 };
 
@@ -110,6 +111,7 @@ export interface CreateContestPayload {
   durationMinutes: number;
   problemIds: string[];
   bannerBadge?: string;
+  editorial?: string;
 }
 
 /**
@@ -119,3 +121,15 @@ export const createContest = async (payload: CreateContestPayload): Promise<Cont
   const response = await apiClient.post('/contests', payload);
   return normalizeContest(response.data.data);
 };
+
+/**
+ * Update contest editorial markdown (Admin/Setter only)
+ */
+export const updateContestEditorial = async (
+  contestId: string,
+  editorial: string
+): Promise<Contest> => {
+  const response = await apiClient.put(`/contests/${contestId}/editorial`, { editorial });
+  return normalizeContest(response.data.data);
+};
+

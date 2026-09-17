@@ -11,6 +11,7 @@ export interface IContest extends Document {
   problemIds: Types.ObjectId[];
   registeredUserIds: Types.ObjectId[];
   status: ContestStatus;
+  editorial?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +25,7 @@ const ContestSchema = new Schema<IContest>(
     problemIds: [{ type: Schema.Types.ObjectId, ref: 'Problem' }],
     registeredUserIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     status: { type: String, enum: ['upcoming', 'live', 'ended'], default: 'upcoming' },
+    editorial: { type: String, default: '' },
   },
   { timestamps: true }
 );

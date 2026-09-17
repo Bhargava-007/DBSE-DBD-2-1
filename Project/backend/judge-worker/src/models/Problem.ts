@@ -2,6 +2,7 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 export type SupportedLanguage = 'cpp' | 'python' | 'java' | 'javascript';
+export type ProblemStatus = 'draft' | 'published' | 'archived';
 
 export interface ITestCase {
   id?: string;
@@ -22,6 +23,7 @@ export interface IProblem extends Document {
   constraints: string[];
   sampleTestCases: ITestCase[];
   hiddenTestCases: ITestCase[];
+  status: ProblemStatus;
   isPublished: boolean;
   submissionsCount: number;
   totalAccepted: number;
@@ -50,7 +52,8 @@ const ProblemSchema = new Schema<IProblem>(
     constraints: [{ type: String }],
     sampleTestCases: [TestCaseSchema],
     hiddenTestCases: [TestCaseSchema],
-    isPublished: { type: Boolean, default: true },
+    status: { type: String, enum: ['draft', 'published', 'archived'], default: 'draft' },
+    isPublished: { type: Boolean, default: false },
     submissionsCount: { type: Number, default: 0 },
     totalAccepted: { type: Number, default: 0 },
   },

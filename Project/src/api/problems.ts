@@ -1,10 +1,11 @@
 import apiClient from './client';
-import type { Problem, Difficulty, SupportedLanguage, TestCase } from '../types/judge';
+import type { Problem, Difficulty, SupportedLanguage, TestCase, ProblemStatus } from '../types/judge';
 
 export interface ProblemFilters {
   search?: string;
   difficulty?: Difficulty;
   tag?: string;
+  status?: ProblemStatus | 'all';
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -40,6 +41,7 @@ export interface CreateProblemPayload {
     expectedOutput: string;
   }>;
   starterCode?: Record<SupportedLanguage, string>;
+  status?: ProblemStatus;
 }
 
 export const normalizeProblem = (raw: any): Problem => {
@@ -64,6 +66,9 @@ export const normalizeProblem = (raw: any): Problem => {
   const acceptanceRate =
     submissionsCount > 0 ? Number(((totalAccepted / submissionsCount) * 100).toFixed(1)) : 0;
 
+  const status: ProblemStatus =
+    raw.status || (raw.isPublished === false ? 'draft' : 'published');
+
   return {
     id: raw._id ? raw._id.toString() : raw.id || '',
     title: raw.title || '',
@@ -78,6 +83,7 @@ export const normalizeProblem = (raw: any): Problem => {
     sampleTestCases,
     hiddenTestCasesCount: raw.hiddenTestCases ? raw.hiddenTestCases.length : (raw.hiddenTestCasesCount ?? 0),
     starterCode,
+    status,
     submissionsCount,
     totalAccepted,
     author: raw.authorName || raw.author || 'AlgoFlow Editorial',

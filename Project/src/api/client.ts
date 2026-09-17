@@ -10,10 +10,10 @@ export const apiClient = axios.create({
   timeout: 30000,
 });
 
-// Request Interceptor: Attach JWT token from localStorage
+// Request Interceptor: Attach JWT token from localStorage or sessionStorage
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,11 +28,13 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Clear expired auth session
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (token) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        console.warn('[API Client] Session expired or unauthorized (401). Local session cleared.');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        console.warn('[API Client] Session expired or unauthorized (401). Auth session cleared.');
       }
     }
     return Promise.reject(error);

@@ -49,7 +49,7 @@ interface JudgeContextType {
   toggleTheme: () => void;
   
   // Auth Operations
-  loginUser: (identifier: string, password: string) => Promise<void>;
+  loginUser: (identifier: string, password: string, rememberMe?: boolean) => Promise<void>;
   registerUser: (username: string, email: string, password: string, name?: string) => Promise<void>;
   logoutUser: () => void;
   
@@ -66,8 +66,8 @@ const JudgeContext = createContext<JudgeContextType | undefined>(undefined);
 
 export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
     if (token && savedUser) {
       try {
         return JSON.parse(savedUser);
@@ -136,7 +136,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   // 3. Load Current User from Token on Startup
   useEffect(() => {
     const initAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       if (token) {
         try {
           const user = await authApi.getMe();
@@ -209,12 +209,21 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
 
   // 5. Authentication Handlers
-  const loginUser = async (identifier: string, password: string): Promise<void> => {
+  const loginUser = async (identifier: string, password: string, rememberMe: boolean = true): Promise<void> => {
     setApiError(null);
     try {
       const data = await authApi.login(identifier, password);
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      if (rememberMe) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+      } else {
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
       setCurrentUser(data.user);
       connectContestSocket();
       setIsAuthModalOpen(false);
@@ -236,6 +245,8 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const data = await authApi.register({ username, email, password, name });
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       setCurrentUser(data.user);
       connectContestSocket();
       setIsAuthModalOpen(false);
@@ -250,6 +261,8 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     disconnectContestSocket();
   };
 

@@ -33,7 +33,8 @@ const createProblemSchema = z.object({
   sampleTestCases: z.array(testCaseSchema).min(1, 'At least 1 sample test case is required'),
   hiddenTestCases: z.array(testCaseSchema).default([]),
   starterCode: starterCodeSchema.optional(),
-  isPublished: z.boolean().default(true),
+  status: z.enum(['draft', 'published', 'archived']).default('draft'),
+  isPublished: z.boolean().optional(),
 });
 
 const updateProblemSchema = createProblemSchema.partial();
@@ -42,6 +43,7 @@ const queryFilterSchema = z.object({
   search: z.string().optional(),
   difficulty: z.enum(['Easy', 'Medium', 'Hard']).optional(),
   tag: z.string().optional(),
+  status: z.enum(['draft', 'published', 'archived', 'all']).optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
   sortBy: z.enum(['createdAt', 'difficulty', 'acceptanceRate', 'title']).default('createdAt'),
@@ -69,24 +71,40 @@ router.get(
   validate(queryFilterSchema, 'query'),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const { search, difficulty, tag, page, limit, sortBy, sortOrder } = req.query as any;
+      const { search, difficulty, tag, status, page, limit, sortBy, sortOrder } = req.query as any;
 
-      const filter: Record<string, any> = { isPublished: true };
+      const conditions: any[] = [];
+
+      if (status && status !== 'all') {
+        conditions.push({ status });
+      } else if (!status) {
+        // Public list only shows published problems
+        conditions.push({
+          $or: [
+            { status: 'published' },
+            { status: { $exists: false }, isPublished: true },
+          ],
+        });
+      }
 
       if (difficulty) {
-        filter.difficulty = difficulty;
+        conditions.push({ difficulty });
       }
 
       if (tag && tag !== 'All') {
-        filter.tags = tag;
+        conditions.push({ tags: tag });
       }
 
       if (search) {
-        filter.$or = [
-          { title: { $regex: search, $options: 'i' } },
-          { tags: { $regex: search, $options: 'i' } },
-        ];
+        conditions.push({
+          $or: [
+            { title: { $regex: search, $options: 'i' } },
+            { tags: { $regex: search, $options: 'i' } },
+          ],
+        });
       }
+
+      const filter = conditions.length > 0 ? { $and: conditions } : {};
 
       const skip = (page - 1) * limit;
       const sortOptions: Record<string, 1 | -1> = {
@@ -192,8 +210,13 @@ router.post(
         finalSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
       }
 
+      const problemStatus = payload.status || 'draft';
+      const isPublished = problemStatus === 'published';
+
       const problem = new Problem({
         ...payload,
+        status: problemStatus,
+        isPublished,
         slug: finalSlug,
         authorId: req.userId,
         authorName: req.user?.name || req.user?.username,
@@ -232,6 +255,12 @@ router.put(
 
       if (updates.title && !updates.slug) {
         updates.slug = generateSlug(updates.title);
+      }
+
+      if (updates.status) {
+        updates.isPublished = updates.status === 'published';
+      } else if (updates.isPublished !== undefined) {
+        updates.status = updates.isPublished ? 'published' : 'draft';
       }
 
       const problem = await Problem.findByIdAndUpdate(id, updates, {

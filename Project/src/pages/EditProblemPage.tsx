@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import apiClient from '../api/client';
 import { updateProblem } from '../api/problems';
 import type { CreateProblemPayload } from '../api/problems';
-import type { Difficulty, SupportedLanguage } from '../types/judge';
+import type { Difficulty, SupportedLanguage, ProblemStatus } from '../types/judge';
 import {
   Clock,
   Cpu,
@@ -80,6 +80,7 @@ export const EditProblemPage: React.FC = () => {
   // Metadata
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
+  const [status, setStatus] = useState<ProblemStatus>('draft');
   const [selectedTags, setSelectedTags] = useState<string[]>(['Array', 'Hash Table']);
   const [timeLimitMs, setTimeLimitMs] = useState(1000);
   const [memoryLimitMb, setMemoryLimitMb] = useState(256);
@@ -129,6 +130,7 @@ export const EditProblemPage: React.FC = () => {
 
         setTitle(data.title || '');
         setDifficulty(data.difficulty || 'Medium');
+        setStatus((data.status as ProblemStatus) || (data.isPublished === false ? 'draft' : 'published'));
         setSelectedTags(Array.isArray(data.tags) && data.tags.length > 0 ? data.tags : ['Array']);
         setTimeLimitMs(data.timeLimitMs || 1000);
         setMemoryLimitMb(data.memoryLimitMb || 256);
@@ -271,6 +273,7 @@ export const EditProblemPage: React.FC = () => {
       title: title.trim(),
       description: description.trim(),
       difficulty,
+      status,
       timeLimitMs,
       memoryLimitMb,
       tags: selectedTags,
@@ -366,6 +369,26 @@ export const EditProblemPage: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Top Status Dropdown */}
+          <div className="flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border)] rounded-[var(--r-md)] px-2.5 py-1">
+            <span className="text-[11px] font-mono text-[var(--text-3)] font-medium">Status:</span>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as ProblemStatus)}
+              className={`text-xs font-mono font-semibold bg-transparent focus:outline-none cursor-pointer ${
+                status === 'published'
+                  ? 'text-[var(--green)]'
+                  : status === 'draft'
+                  ? 'text-[var(--amber)]'
+                  : 'text-[var(--text-3)]'
+              }`}
+            >
+              <option value="draft" className="bg-[var(--bg-elevated)] text-[var(--amber)]">Draft</option>
+              <option value="published" className="bg-[var(--bg-elevated)] text-[var(--green)]">Published</option>
+              <option value="archived" className="bg-[var(--bg-elevated)] text-[var(--text-3)]">Archived</option>
+            </select>
+          </div>
+
           <Link to="/admin" className="btn-secondary !text-xs !py-2">
             Cancel
           </Link>
@@ -434,6 +457,33 @@ export const EditProblemPage: React.FC = () => {
                 placeholder="e.g. Merge K Sorted Lists"
                 className="input-field w-full text-sm"
               />
+            </div>
+
+            {/* Status Toggle Dropdown in Metadata */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-[var(--text-2)]">
+                  Publication Status <span className="text-[var(--red)]">*</span>
+                </label>
+                <span className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded capitalize ${
+                  status === 'published'
+                    ? 'bg-[var(--green-dim)] text-[var(--green)]'
+                    : status === 'draft'
+                    ? 'bg-[var(--amber-dim)] text-[var(--amber)]'
+                    : 'bg-[var(--bg-canvas)] text-[var(--text-3)] border border-[var(--border)]'
+                }`}>
+                  {status}
+                </span>
+              </div>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as ProblemStatus)}
+                className="input-field w-full text-xs font-mono cursor-pointer"
+              >
+                <option value="draft">Draft — Hidden from public catalogue</option>
+                <option value="published">Published — Live in public problem catalogue</option>
+                <option value="archived">Archived — Inactive and hidden from catalogue</option>
+              </select>
             </div>
 
             {/* Difficulty */}

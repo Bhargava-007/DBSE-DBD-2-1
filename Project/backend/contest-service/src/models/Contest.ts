@@ -25,6 +25,7 @@ export interface IContest extends Document {
   status: ContestStatus;
   scoringMode?: string;
   bannerBadge?: string;
+  editorial?: string;
   finalRankings: IFinalRanking[];
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +57,7 @@ const ContestSchema = new Schema<IContest>(
     status: { type: String, enum: ['upcoming', 'live', 'ended'], default: 'upcoming', index: true },
     scoringMode: { type: String, default: 'ICPC' },
     bannerBadge: { type: String, default: 'Rated' },
+    editorial: { type: String, default: '' },
     finalRankings: [FinalRankingSchema],
   },
   { timestamps: true }

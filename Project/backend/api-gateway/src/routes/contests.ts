@@ -21,6 +21,11 @@ const createContestSchema = z.object({
   problems: z.array(z.union([z.string(), z.record(z.any())])).optional(),
   scoringMode: z.string().optional().default('ICPC'),
   bannerBadge: z.string().optional(),
+  editorial: z.string().optional(),
+});
+
+const updateEditorialSchema = z.object({
+  editorial: z.string({ required_error: 'Editorial content must be a string' }),
 });
 
 const generateSlug = (title: string): string => {
@@ -174,6 +179,7 @@ router.post(
         problemIds: rawProblemIds,
         scoringMode: payload.scoringMode || 'ICPC',
         bannerBadge: payload.bannerBadge || (payload.scoringMode === 'ICPC' ? 'ICPC Scoring • 20m Penalty' : 'Rated (Div. 1 + Div. 2)'),
+        editorial: payload.editorial || '',
         createdBy: req.userId,
         registeredUserIds: [],
         status,
@@ -244,6 +250,48 @@ router.post(
       res.status(500).json({
         success: false,
         error: 'Failed to register for contest.',
+      });
+    }
+  }
+);
+
+/**
+ * PUT /api/contests/:id/editorial
+ * Update contest editorial markdown (Admin and Setter only)
+ */
+router.put(
+  '/:id/editorial',
+  authenticate,
+  authorize('admin', 'setter'),
+  validate(updateEditorialSchema),
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+      const query = isObjectId ? { _id: id } : { slug: id.toLowerCase() };
+
+      const contest = await Contest.findOne(query);
+      if (!contest) {
+        res.status(404).json({
+          success: false,
+          error: 'Contest not found.',
+        });
+        return;
+      }
+
+      contest.editorial = req.body.editorial;
+      await contest.save();
+
+      res.status(200).json({
+        success: true,
+        data: contest,
+        message: 'Contest editorial updated successfully.',
+      });
+    } catch (error: any) {
+      logger.error({ err: error }, '[Contests Route] Update Editorial Error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update contest editorial.',
       });
     }
   }

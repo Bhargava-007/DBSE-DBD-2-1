@@ -16,6 +16,7 @@ export interface IContest extends Document {
   status: ContestStatus;
   scoringMode?: string;
   bannerBadge?: string;
+  editorial?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,6 +84,10 @@ const ContestSchema = new Schema<IContest>(
     bannerBadge: {
       type: String,
       default: 'Rated',
+    },
+    editorial: {
+      type: String,
+      default: '',
     },
   },
   {

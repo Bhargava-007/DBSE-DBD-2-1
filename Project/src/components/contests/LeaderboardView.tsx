@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
-import { ArrowLeft, Trophy, Check, Clock, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Trophy, Check, Clock, CheckCircle2, Loader2, BookOpen, FileText } from 'lucide-react';
 import { getLeaderboard, getContest } from '../../api/contests';
+import { renderMarkdownToHtml } from '../../utils/markdownRenderer';
 import { 
   getContestSocket, 
   joinContest, 
@@ -38,6 +39,9 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [activeTab, setActiveTab] = useState<'scoreboard' | 'editorial'>('scoreboard');
+
+  const isContestEnded = contest?.status?.toLowerCase() === 'ended' || contest?.status === 'Ended';
 
   // Fetch contest metadata for challenge set
   const fetchContestData = useCallback(async () => {
@@ -209,7 +213,83 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
         </div>
       </div>
 
-      {/* Telemetry Overview Cards */}
+      {/* Tabs Navigation (Shown when Contest Status is Ended) */}
+      {isContestEnded && (
+        <div className="flex items-center gap-2 border-b border-[var(--border)] pb-3 font-mono text-xs">
+          <button
+            onClick={() => setActiveTab('scoreboard')}
+            className={`px-4 py-2 rounded-[var(--r-md)] font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'scoreboard'
+                ? 'bg-[var(--ash)] text-[var(--bone)] border border-[var(--border)] shadow-sm'
+                : 'text-[var(--text-3)] hover:text-[var(--bone)] hover:bg-[var(--ash)] border border-transparent'
+            }`}
+          >
+            <Trophy className="w-3.5 h-3.5 text-[var(--amber)]" />
+            <span>ICPC Scoreboard</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('editorial')}
+            className={`px-4 py-2 rounded-[var(--r-md)] font-semibold transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === 'editorial'
+                ? 'bg-[var(--accent-dim)] text-[var(--verdigris)] border border-[var(--accent-border)] shadow-sm'
+                : 'text-[var(--text-3)] hover:text-[var(--bone)] hover:bg-[var(--ash)] border border-transparent'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-[var(--verdigris)]" />
+            <span>Editorial & Solutions</span>
+            {contest?.editorial && contest.editorial.trim().length > 0 && (
+              <span className="px-1.5 py-0.2 rounded bg-[var(--green-dim)] text-[var(--green)] text-[10px] font-bold border border-[var(--green)]/30">
+                Ready
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+
+      {activeTab === 'editorial' ? (
+        <div className="space-y-6 page-fade">
+          <div className="card p-6 bg-[var(--carbon)] border-[var(--border)] space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[var(--border)] pb-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-[var(--verdigris)]" />
+                  <h2 className="text-base font-bold text-[var(--bone)] tracking-tight">
+                    Official Round Editorial
+                  </h2>
+                </div>
+                <p className="text-xs text-[var(--text-2)]">
+                  Algorithmic breakdowns, mathematical proofs, and model solutions for {displayTitle}.
+                </p>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-[var(--green-dim)] border border-[var(--green)]/30 text-[var(--green)] text-xs font-mono font-semibold self-start sm:self-auto flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Round Concluded</span>
+              </span>
+            </div>
+
+            {contest?.editorial && contest.editorial.trim().length > 0 ? (
+              <div
+                className="text-xs sm:text-sm text-[var(--text-2)] leading-relaxed space-y-4 font-sans editorial-content"
+                dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(contest.editorial) }}
+              />
+            ) : (
+              <div className="py-16 text-center space-y-3">
+                <div className="w-12 h-12 rounded-full bg-[var(--ash)] border border-[var(--border)] flex items-center justify-center mx-auto text-[var(--text-3)]">
+                  <FileText className="w-6 h-6 text-[var(--text-3)]" />
+                </div>
+                <h3 className="text-sm font-bold text-[var(--bone)]">
+                  Editorial Not Published Yet
+                </h3>
+                <p className="text-xs font-mono text-[var(--text-3)] max-w-md mx-auto">
+                  The contest coordinators and problem setters have not published the official editorial for this tournament yet. Please check back soon.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Telemetry Overview Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <div className="card p-4 text-center bg-[var(--carbon)] border-[var(--border)]">
           <div className="text-2xl font-bold font-mono text-[var(--bone)]">
@@ -437,6 +517,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
             <span>Auto-refreshing via WebSocket feed</span>
           </div>
         </div>
+      )}
+        </>
       )}
 
     </div>

@@ -17,9 +17,18 @@ import {
   CheckCircle2,
   Edit3,
   ExternalLink,
-  Code2
+  Code2,
+  BookOpen,
+  Save,
+  FileText,
+  Eye,
+  Calendar,
+  Clock
 } from 'lucide-react';
 import { useJudge } from '../context/JudgeContext';
+import { renderMarkdownToHtml } from '../utils/markdownRenderer';
+import { normalizeContest } from '../api/contests';
+import type { Contest } from '../types/judge';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
@@ -38,6 +47,7 @@ interface AdminProblem {
   slug: string;
   difficulty: 'Easy' | 'Medium' | 'Hard';
   tags: string[];
+  status?: 'draft' | 'published' | 'archived';
   submissionsCount?: number;
   totalAccepted?: number;
   isPublished?: boolean;
@@ -105,7 +115,7 @@ interface ContestOption {
   participantCount?: number;
 }
 
-type Tab = 'overview' | 'problems' | 'users' | 'submissions' | 'plagiarism' | 'health';
+type Tab = 'overview' | 'problems' | 'contests' | 'users' | 'submissions' | 'plagiarism' | 'health';
 
 const VERDICT_COLOR: Record<string, string> = {
   Accepted: 'text-[var(--green)]',
@@ -123,14 +133,25 @@ export const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [problems, setProblems] = useState<AdminProblem[]>([]);
-  const [problemSearch, setProblemSearch] = useState('');
+  const [adminContests, setAdminContests] = useState<Contest[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [userSearch, setUserSearch] = useState('');
   const [submissions, setSubmissions] = useState<RecentSubmission[]>([]);
   const [health, setHealth] = useState<HealthData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+
+  // Search states
+  const [problemSearch, setProblemSearch] = useState<string>('');
+  const [contestSearch, setContestSearch] = useState<string>('');
+  const [userSearch, setUserSearch] = useState<string>('');
+
+  // Contests Editorial Editor state
+  const [expandedEditorialId, setExpandedEditorialId] = useState<string | null>(null);
+  const [editorialDrafts, setEditorialDrafts] = useState<Record<string, string>>({});
+  const [savingEditorialId, setSavingEditorialId] = useState<string | null>(null);
+  const [editorialSaveSuccess, setEditorialSaveSuccess] = useState<string | null>(null);
+  const [editorialPreviewMode, setEditorialPreviewMode] = useState<Record<string, boolean>>({});
 
   // Plagiarism state
   const [contestsList, setContestsList] = useState<ContestOption[]>([]);
@@ -143,7 +164,7 @@ export const AdminPage: React.FC = () => {
   const [selectedPair, setSelectedPair] = useState<SuspiciousMatch | null>(null);
 
   const authHeader = () => ({
-    Authorization: `Bearer ${localStorage.getItem('token')}`,
+    Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`,
     'Content-Type': 'application/json',
   });
 
@@ -161,8 +182,8 @@ export const AdminPage: React.FC = () => {
     setLoading(true);
     try {
       const url = search 
-        ? `${API}/problems?search=${encodeURIComponent(search)}&limit=100` 
-        : `${API}/problems?limit=100`;
+        ? `${API}/problems?status=all&search=${encodeURIComponent(search)}&limit=100` 
+        : `${API}/problems?status=all&limit=100`;
       const res = await fetch(url, { headers: authHeader() });
       const json = await res.json();
       if (json.success && json.data) {
@@ -176,6 +197,83 @@ export const AdminPage: React.FC = () => {
       setLoading(false);
     }
   }, []);
+
+  const handleQuickStatusChange = async (problemId: string, newStatus: 'draft' | 'published' | 'archived') => {
+    try {
+      const res = await fetch(`${API}/problems/${problemId}`, {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setProblems(prev =>
+          prev.map(p => {
+            if ((p._id || p.id) === problemId) {
+              return { ...p, status: newStatus, isPublished: newStatus === 'published' };
+            }
+            return p;
+          })
+        );
+      } else {
+        setError(json.error || 'Failed to update problem status.');
+      }
+    } catch {
+      setError('Failed to update problem status.');
+    }
+  };
+
+  const fetchAdminContests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/contests`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        const list = json.data.map(normalizeContest);
+        setAdminContests(list);
+        const initialDrafts: Record<string, string> = {};
+        list.forEach((c: Contest) => {
+          initialDrafts[c.id] = c.editorial || '';
+        });
+        setEditorialDrafts(prev => ({ ...initialDrafts, ...prev }));
+      } else {
+        setError('Failed to load contests.');
+      }
+    } catch {
+      setError('Failed to load contests list.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleSaveEditorial = async (contestId: string) => {
+    setSavingEditorialId(contestId);
+    setEditorialSaveSuccess(null);
+    try {
+      const content = editorialDrafts[contestId] ?? '';
+      const res = await fetch(`${API}/contests/${contestId}/editorial`, {
+        method: 'PUT',
+        headers: authHeader(),
+        body: JSON.stringify({ editorial: content }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setEditorialSaveSuccess(contestId);
+        setAdminContests(prev =>
+          prev.map(c => (c.id === contestId ? { ...c, editorial: content } : c))
+        );
+        setTimeout(() => {
+          setEditorialSaveSuccess(prev => (prev === contestId ? null : prev));
+        }, 3000);
+      } else {
+        setError(json.error || 'Failed to save editorial.');
+      }
+    } catch {
+      setError('Failed to save editorial to server.');
+    } finally {
+      setSavingEditorialId(null);
+    }
+  };
 
   const fetchUsers = useCallback(async (search = '') => {
     setLoading(true);
@@ -325,6 +423,7 @@ export const AdminPage: React.FC = () => {
 
   useEffect(() => {
     if (activeTab === 'problems') fetchProblems(problemSearch);
+    if (activeTab === 'contests') fetchAdminContests();
     if (activeTab === 'users') fetchUsers(userSearch);
     if (activeTab === 'submissions') fetchSubmissions();
     if (activeTab === 'plagiarism') {
@@ -339,6 +438,7 @@ export const AdminPage: React.FC = () => {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'problems', label: 'Problems' },
+    { id: 'contests', label: 'Contests' },
     { id: 'users', label: 'Users' },
     { id: 'submissions', label: 'Live Feed' },
     { id: 'plagiarism', label: 'Plagiarism' },
@@ -400,6 +500,7 @@ export const AdminPage: React.FC = () => {
           onClick={() => {
             if (activeTab === 'overview') fetchStats();
             if (activeTab === 'problems') fetchProblems(problemSearch);
+            if (activeTab === 'contests') fetchAdminContests();
             if (activeTab === 'users') fetchUsers(userSearch);
             if (activeTab === 'submissions') fetchSubmissions();
             if (activeTab === 'plagiarism') {
@@ -484,18 +585,27 @@ export const AdminPage: React.FC = () => {
             </p>
           </div>
 
-          <Link
-            to="/admin/contests/new"
-            className="card p-6 space-y-3 hover:border-[var(--border-strong)] transition-all block group bg-[var(--carbon)] border-[var(--border)]"
+          <div
+            onClick={() => setActiveTab('contests')}
+            className="card p-6 space-y-3 hover:border-[var(--border-strong)] transition-all cursor-pointer group bg-[var(--carbon)] border-[var(--border)]"
           >
-            <Trophy className="w-5 h-5 text-[var(--verdigris)]" />
+            <div className="flex items-center justify-between">
+              <Trophy className="w-5 h-5 text-[var(--verdigris)]" />
+              <Link
+                to="/admin/contests/new"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-mono text-[var(--verdigris)] hover:underline flex items-center gap-1"
+              >
+                <PlusCircle className="w-3.5 h-3.5" /> New Contest
+              </Link>
+            </div>
             <h3 className="font-bold text-[var(--bone)] group-hover:text-[var(--verdigris)] transition-colors">
-              Contest Management
+              Contest & Editorial Management
             </h3>
             <p className="text-xs sm:text-sm text-[var(--text-2)] leading-relaxed">
-              Schedule competitive tournaments, configure ICPC/Rated scoring modes, select challenge problemsets, and track live standings.
+              Schedule competitive tournaments, configure ICPC scoring modes, select challenge problemsets, and author official editorials.
             </p>
-          </Link>
+          </div>
 
           <div 
             className="card p-6 space-y-3 hover:border-[var(--border-strong)] transition-all cursor-pointer group bg-[var(--carbon)] border-[var(--border)]" 
@@ -557,6 +667,7 @@ export const AdminPage: React.FC = () => {
               <thead>
                 <tr className="border-b border-[var(--border)] bg-[var(--ash)] text-xs font-mono text-[var(--text-3)] uppercase tracking-wider h-9">
                   <th className="px-4 py-3 font-medium">Problem</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Difficulty</th>
                   <th className="px-4 py-3 font-medium">Tags</th>
                   <th className="px-4 py-3 font-medium">Submissions</th>
@@ -565,22 +676,46 @@ export const AdminPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-[var(--border)]">
                 {loading && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-3)] font-mono">Loading problem catalog...</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-[var(--text-3)] font-mono">Loading problem catalog...</td></tr>
                 )}
                 {!loading && problems.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-3)] font-mono">No problems found.</td></tr>
+                  <tr><td colSpan={6} className="px-4 py-8 text-center text-[var(--text-3)] font-mono">No problems found.</td></tr>
                 )}
                 {problems.map(p => {
-                  const problemId = p._id || p.id;
+                  const problemId = p._id || p.id || '';
                   const accepted = p.totalAccepted ?? 0;
                   const count = p.submissionsCount ?? 0;
                   const rate = count > 0 ? ((accepted / count) * 100).toFixed(0) : '0';
+                  const currentStatus = p.status || (p.isPublished ? 'published' : 'draft');
 
                   return (
                     <tr key={problemId} className="hover:bg-[var(--ash)] transition-colors">
                       <td className="px-4 py-3">
                         <div className="font-semibold text-[var(--bone)] text-sm">{p.title}</div>
                         <div className="text-xs font-mono text-[var(--text-3)]">/{p.slug}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold capitalize ${
+                            currentStatus === 'published'
+                              ? 'bg-[var(--green-dim)] text-[var(--green)] border border-[var(--green)]/30'
+                              : currentStatus === 'draft'
+                              ? 'bg-[var(--amber-dim)] text-[var(--amber)] border border-[var(--amber)]/30'
+                              : 'bg-[var(--ash)] text-[var(--text-3)] border border-[var(--border)]'
+                          }`}>
+                            {currentStatus}
+                          </span>
+                          <select
+                            value={currentStatus}
+                            onChange={(e) => handleQuickStatusChange(problemId, e.target.value as 'draft' | 'published' | 'archived')}
+                            className="h-6 px-1 text-[11px] font-mono bg-[var(--ash)] border border-[var(--border)] focus:border-[var(--verdigris)] rounded text-[var(--text-2)] hover:text-[var(--bone)] cursor-pointer focus:outline-none transition-colors"
+                            title="Quick Status Change"
+                          >
+                            <option value="draft" className="bg-[var(--carbon)] text-[var(--amber)]">draft</option>
+                            <option value="published" className="bg-[var(--carbon)] text-[var(--green)]">published</option>
+                            <option value="archived" className="bg-[var(--carbon)] text-[var(--text-3)]">archived</option>
+                          </select>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
@@ -638,7 +773,277 @@ export const AdminPage: React.FC = () => {
         </div>
       )}
 
-      {/* 2. USERS */}
+      {/* 3. CONTESTS & EDITORIALS */}
+      {activeTab === 'contests' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="relative max-w-sm flex-1">
+              <Search className="w-4 h-4 text-[var(--text-3)] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search contest by title or slug..."
+                value={contestSearch}
+                onChange={e => setContestSearch(e.target.value)}
+                className="w-full h-9 bg-[var(--ash)] border border-[var(--border)] focus:border-[var(--verdigris)] rounded-[var(--r-md)] pl-9 pr-3 text-xs font-mono text-[var(--bone)] placeholder-[var(--text-3)] focus:outline-none transition-colors"
+              />
+            </div>
+            <Link
+              to="/admin/contests/new"
+              className="btn-primary !bg-[var(--verdigris)] !text-[var(--obsidian)] !font-semibold text-xs font-mono flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              Create Contest
+            </Link>
+          </div>
+
+          <div className="space-y-4">
+            {loading && (
+              <div className="card py-12 text-center text-[var(--text-3)] font-mono bg-[var(--carbon)] border-[var(--border)]">
+                <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-[var(--verdigris)]" />
+                <span>Loading tournament roster...</span>
+              </div>
+            )}
+
+            {!loading && adminContests.length === 0 && (
+              <div className="card py-12 text-center text-[var(--text-3)] font-mono bg-[var(--carbon)] border-[var(--border)]">
+                No contests found. Click "Create Contest" to initialize a new tournament.
+              </div>
+            )}
+
+            {!loading &&
+              adminContests
+                .filter(c =>
+                  contestSearch
+                    ? c.title.toLowerCase().includes(contestSearch.toLowerCase()) ||
+                      c.slug.toLowerCase().includes(contestSearch.toLowerCase())
+                    : true
+                )
+                .map(contest => {
+                  const isExpanded = expandedEditorialId === contest.id;
+                  const isSaving = savingEditorialId === contest.id;
+                  const isSaved = editorialSaveSuccess === contest.id;
+                  const isPreview = editorialPreviewMode[contest.id] ?? false;
+                  const currentEditorial = editorialDrafts[contest.id] ?? '';
+                  const hasEditorial = Boolean(contest.editorial && contest.editorial.trim().length > 0);
+
+                  return (
+                    <div
+                      key={contest.id}
+                      className="card p-5 bg-[var(--carbon)] border-[var(--border)] space-y-4 transition-all"
+                    >
+                      {/* Contest Header Row */}
+                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                        <div className="space-y-1.5 min-w-0">
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold uppercase ${
+                                contest.status === 'Live'
+                                  ? 'bg-[var(--green-dim)] text-[var(--green)] border border-[var(--green)]/30'
+                                  : contest.status === 'Upcoming'
+                                  ? 'bg-[var(--amber-dim)] text-[var(--amber)] border border-[var(--amber)]/30'
+                                  : 'bg-[var(--ash)] text-[var(--text-3)] border border-[var(--border)]'
+                              }`}
+                            >
+                              {contest.status}
+                            </span>
+                            <h3 className="text-base font-bold text-[var(--bone)] tracking-tight truncate">
+                              {contest.title}
+                            </h3>
+                            <span className="text-xs font-mono text-[var(--text-3)]">
+                              /{contest.slug}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs font-mono text-[var(--text-3)] flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                              {new Date(contest.startTime).toLocaleDateString()}
+                            </span>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                              {contest.durationMinutes} mins
+                            </span>
+                            <span>·</span>
+                            <span>{contest.problemIds.length} Problems</span>
+                            <span>·</span>
+                            <span>{contest.participantCount.toLocaleString()} Participants</span>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2 self-start lg:self-auto shrink-0 flex-wrap">
+                          <button
+                            onClick={() =>
+                              setExpandedEditorialId(isExpanded ? null : contest.id)
+                            }
+                            className={`btn-secondary !text-xs !py-1.5 !px-3 font-mono flex items-center gap-1.5 cursor-pointer transition-colors ${
+                              isExpanded
+                                ? 'bg-[var(--ash)] border-[var(--verdigris)] text-[var(--verdigris)]'
+                                : hasEditorial
+                                ? 'text-[var(--bone)] border-[var(--border)]'
+                                : 'text-[var(--text-2)] border-[var(--border)]'
+                            }`}
+                          >
+                            <BookOpen className="w-3.5 h-3.5 text-[var(--verdigris)]" />
+                            <span>{isExpanded ? 'Hide Editorial Editor' : 'Edit Editorial'}</span>
+                            {hasEditorial && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--green)] inline-block ml-0.5" />
+                            )}
+                          </button>
+
+                          <Link
+                            to={`/contests/${contest.id}`}
+                            className="btn-secondary !text-xs !py-1.5 !px-3 font-mono text-[var(--bone)] hover:text-[var(--verdigris)] flex items-center gap-1.5"
+                            title="View Scoreboard & Contest"
+                          >
+                            <Trophy className="w-3.5 h-3.5 text-[var(--amber)]" />
+                            <span>Standings</span>
+                            <ExternalLink className="w-3 h-3 text-[var(--text-3)]" />
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Expandable Editorial Editor Drawer */}
+                      {isExpanded && (
+                        <div className="p-4 rounded-[var(--r-md)] bg-[var(--ash)]/50 border border-[var(--border)] space-y-3.5 page-fade">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--border)] pb-2.5">
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-4 h-4 text-[var(--verdigris)]" />
+                              <span className="text-xs font-mono font-bold text-[var(--bone)] uppercase tracking-wider">
+                                Contest Editorial (Markdown)
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {/* Quick Insert Snippet Buttons */}
+                              <div className="hidden md:flex items-center gap-1 font-mono text-[10px] text-[var(--text-3)]">
+                                <span className="mr-1">Insert:</span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditorialDrafts(prev => ({
+                                      ...prev,
+                                      [contest.id]:
+                                        (prev[contest.id] || '') +
+                                        '\n\n## Problem A: \n\n### Approach\n\n### Complexity\n- Time: O(N)\n- Space: O(1)\n',
+                                    }))
+                                  }
+                                  className="px-1.5 py-0.5 rounded bg-[var(--carbon)] hover:bg-[var(--ash)] border border-[var(--border)] text-[var(--bone)] cursor-pointer"
+                                >
+                                  + Problem Section
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditorialDrafts(prev => ({
+                                      ...prev,
+                                      [contest.id]:
+                                        (prev[contest.id] || '') +
+                                        '\n```cpp\n// C++ Solution\n#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // solution\n    return 0;\n}\n```\n',
+                                    }))
+                                  }
+                                  className="px-1.5 py-0.5 rounded bg-[var(--carbon)] hover:bg-[var(--ash)] border border-[var(--border)] text-[var(--verdigris)] cursor-pointer"
+                                >
+                                  + Code Block
+                                </button>
+                              </div>
+
+                              {/* Toggle Preview / Write */}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditorialPreviewMode(prev => ({
+                                    ...prev,
+                                    [contest.id]: !isPreview,
+                                  }))
+                                }
+                                className={`px-2.5 py-1 rounded text-xs font-mono flex items-center gap-1.5 cursor-pointer border ${
+                                  isPreview
+                                    ? 'bg-[var(--accent-dim)] text-[var(--verdigris)] border-[var(--accent-border)]'
+                                    : 'bg-[var(--carbon)] text-[var(--bone)] border-[var(--border)]'
+                                }`}
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>{isPreview ? 'Write Mode' : 'Preview HTML'}</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Editor or Preview Pane */}
+                          {isPreview ? (
+                            <div className="min-h-[220px] max-h-[420px] overflow-y-auto p-4 rounded-[var(--r-md)] bg-[var(--carbon)] border border-[var(--border)]">
+                              {currentEditorial.trim().length > 0 ? (
+                                <div
+                                  className="text-xs sm:text-sm text-[var(--text-2)] leading-relaxed space-y-4 font-sans editorial-content"
+                                  dangerouslySetInnerHTML={{
+                                    __html: renderMarkdownToHtml(currentEditorial),
+                                  }}
+                                />
+                              ) : (
+                                <div className="text-center py-10 text-xs font-mono text-[var(--text-3)]">
+                                  Editorial markdown draft is empty. Switch to Write Mode to compose solutions.
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <textarea
+                              value={currentEditorial}
+                              onChange={e =>
+                                setEditorialDrafts(prev => ({
+                                  ...prev,
+                                  [contest.id]: e.target.value,
+                                }))
+                              }
+                              rows={10}
+                              placeholder="Write tournament editorial in Markdown (e.g. ## Problem A: Title\n\n### Approach\nExplain algorithm and invariants...\n\n```cpp\n// C++ Solution\n```)"
+                              className="w-full bg-[var(--carbon)] border border-[var(--border)] focus:border-[var(--verdigris)] rounded-[var(--r-md)] p-3.5 text-xs font-mono text-[var(--bone)] placeholder-[var(--text-3)] focus:outline-none leading-relaxed transition-colors resize-y font-normal"
+                            />
+                          )}
+
+                          {/* Footer Actions */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs font-mono">
+                            <span className="text-[var(--text-3)] text-[11px]">
+                              {currentEditorial.length} characters · {currentEditorial.split('\n').length} lines · Markdown rendered when contest concludes
+                            </span>
+
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                              {isSaved && (
+                                <span className="inline-flex items-center gap-1 text-[var(--green)] font-semibold text-xs font-mono page-fade">
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  <span>Saved to Contest</span>
+                                </span>
+                              )}
+
+                              <button
+                                onClick={() => handleSaveEditorial(contest.id)}
+                                disabled={isSaving}
+                                className="btn-primary !bg-[var(--verdigris)] !text-[var(--obsidian)] !font-semibold text-xs font-mono flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                              >
+                                {isSaving ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <span>Saving Editorial...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Save className="w-3.5 h-3.5" />
+                                    <span>Save Editorial</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+          </div>
+        </div>
+      )}
+
+      {/* 4. USERS */}
       {activeTab === 'users' && (
         <div className="space-y-4">
           <div className="relative max-w-sm">

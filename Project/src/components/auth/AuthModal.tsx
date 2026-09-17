@@ -28,6 +28,7 @@ export const AuthModal: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -49,7 +50,7 @@ export const AuthModal: React.FC = () => {
     setIsLoading(true);
     try {
       if (authModalMode === 'login') {
-        await loginUser(username, password);
+        await loginUser(username, password, rememberMe);
       } else {
         await registerUser(username, email, password);
       }
@@ -82,7 +83,7 @@ export const AuthModal: React.FC = () => {
         : credentialsMap.bhargava);
 
     try {
-      await loginUser(creds.username, creds.password);
+      await loginUser(creds.username, creds.password, rememberMe);
     } catch (err: any) {
       setError(err.message || 'Quick login failed.');
     }
@@ -192,6 +193,27 @@ export const AuthModal: React.FC = () => {
               />
             </div>
           </div>
+
+          {/* Remember Me Checkbox for Login */}
+          {authModalMode === 'login' && (
+            <div className="flex items-center justify-between text-[12px] pt-0.5 select-none">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  id="modal-remember-me"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-[var(--border)] bg-[var(--bg-canvas)] text-[var(--accent)] accent-[var(--accent)] focus:ring-0 focus:outline-none cursor-pointer"
+                />
+                <span className="text-[var(--text-2)] group-hover:text-[var(--text-1)] transition-colors font-medium">
+                  Remember Me
+                </span>
+              </label>
+              <span className="text-[11px] text-[var(--text-3)]">
+                {rememberMe ? 'Stay signed in' : 'Session only'}
+              </span>
+            </div>
+          )}
 
           <button
             type="submit"

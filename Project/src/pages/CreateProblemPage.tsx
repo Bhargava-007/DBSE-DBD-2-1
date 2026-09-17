@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createProblem } from '../api/problems';
 import type { CreateProblemPayload } from '../api/problems';
-import type { Difficulty, SupportedLanguage } from '../types/judge';
+import type { Difficulty, SupportedLanguage, ProblemStatus } from '../types/judge';
 import {
   Clock,
   Cpu,
@@ -72,6 +72,7 @@ export const CreateProblemPage: React.FC = () => {
   // Metadata
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
+  const [status, setStatus] = useState<ProblemStatus>('draft');
   const [selectedTags, setSelectedTags] = useState<string[]>(['Array', 'Hash Table']);
   const [timeLimitMs, setTimeLimitMs] = useState(1000);
   const [memoryLimitMb, setMemoryLimitMb] = useState(256);
@@ -184,6 +185,7 @@ export const CreateProblemPage: React.FC = () => {
       title: title.trim(),
       description: description.trim(),
       difficulty,
+      status,
       timeLimitMs,
       memoryLimitMb,
       tags: selectedTags,
@@ -329,6 +331,33 @@ export const CreateProblemPage: React.FC = () => {
                     }`}
                   >
                     {diff}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Publication Status */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-[var(--text-2)]">
+                Initial Status
+              </label>
+              <div className="flex items-center gap-2">
+                {(['draft', 'published', 'archived'] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setStatus(s)}
+                    className={`flex-1 py-1.5 text-xs font-mono capitalize rounded-[var(--r-md)] border transition-all ${
+                      status === s
+                        ? s === 'published'
+                          ? 'bg-[var(--green-dim)] text-[var(--green)] border-[var(--green)]/40 font-bold'
+                          : s === 'draft'
+                          ? 'bg-[var(--amber-dim)] text-[var(--amber)] border-[var(--amber)]/40 font-bold'
+                          : 'bg-[var(--bg-canvas)] text-[var(--text-2)] border-[var(--text-3)] font-bold'
+                        : 'bg-[var(--bg-card)] text-[var(--text-3)] border-[var(--border)] hover:text-[var(--text-2)]'
+                    }`}
+                  >
+                    {s}
                   </button>
                 ))}
               </div>

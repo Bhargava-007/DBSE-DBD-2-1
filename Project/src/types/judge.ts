@@ -32,6 +32,8 @@ export interface TestCaseResult {
   error?: string;
 }
 
+export type ProblemStatus = 'draft' | 'published' | 'archived';
+
 export interface Problem {
   id: string;
   title: string;
@@ -46,6 +48,7 @@ export interface Problem {
   sampleTestCases: TestCase[];
   hiddenTestCasesCount: number;
   starterCode: Record<SupportedLanguage, string>;
+  status?: ProblemStatus;
   submissionsCount: number;
   totalAccepted: number;
   author: string;
@@ -101,6 +104,7 @@ export interface Contest {
   problemIds: string[];
   scoringMode?: string;
   bannerBadge?: string;
+  editorial?: string;
 }
 
 export interface LeaderboardEntry {
