@@ -93,15 +93,15 @@ router.get('/:id', optionalAuthenticate, async (req: AuthRequest, res: Response)
 
 /**
  * POST /contests
- * Create a new contest tournament (Admin only)
+ * Create a new contest tournament (Admin and Setter)
  */
 router.post(
   '/',
   authenticate,
-  authorize('admin'),
+  authorize('admin', 'setter'),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const { title, slug, description, startTime, endTime, durationMinutes, problemIds, bannerBadge } = req.body;
+      const { title, slug, description, startTime, endTime, durationMinutes, problemIds, problems, scoringMode, bannerBadge } = req.body;
 
       if (!title || !startTime || !endTime) {
         res.status(400).json({
@@ -129,6 +129,10 @@ router.post(
         finalSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
       }
 
+      const rawProblemIds = (problemIds && problemIds.length > 0)
+        ? problemIds
+        : (problems || []).map((p: any) => (typeof p === 'string' ? p : p._id || p.id)).filter(Boolean);
+
       const now = new Date();
       let status: 'upcoming' | 'live' | 'ended' = 'upcoming';
       if (now >= start && now <= end) status = 'live';
@@ -141,8 +145,9 @@ router.post(
         startTime: start,
         endTime: end,
         durationMinutes: durationMinutes || 90,
-        problemIds: problemIds || [],
-        bannerBadge: bannerBadge || 'Rated',
+        problemIds: rawProblemIds,
+        scoringMode: scoringMode || 'ICPC',
+        bannerBadge: bannerBadge || (scoringMode === 'ICPC' ? 'ICPC Scoring • 20m Penalty' : 'Rated (Div. 1 + Div. 2)'),
         createdBy: req.userId,
         registeredUserIds: [],
         status,

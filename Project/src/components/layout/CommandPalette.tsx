@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
 import { Search, X, Code2, ArrowRight } from 'lucide-react';
 import { DifficultyBadge } from '../common/DifficultyBadge';
@@ -8,9 +9,9 @@ export const CommandPalette: React.FC = () => {
     isCommandPaletteOpen, 
     setIsCommandPaletteOpen, 
     problems, 
-    navigateToProblem,
     isProblemSolved 
   } = useJudge();
+  const navigate = useNavigate();
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -43,7 +44,7 @@ export const CommandPalette: React.FC = () => {
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredProblems[selectedIndex]) {
-        navigateToProblem(filteredProblems[selectedIndex].id);
+        navigate(`/problems/${filteredProblems[selectedIndex].slug || filteredProblems[selectedIndex].id}`);
         setIsCommandPaletteOpen(false);
       }
     } else if (e.key === 'Escape') {
@@ -105,7 +106,7 @@ export const CommandPalette: React.FC = () => {
                 <div
                   key={problem.id}
                   onClick={() => {
-                    navigateToProblem(problem.id);
+                    navigate(`/problems/${problem.slug || problem.id}`);
                     setIsCommandPaletteOpen(false);
                   }}
                   onMouseEnter={() => setSelectedIndex(index)}

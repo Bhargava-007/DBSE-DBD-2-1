@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
 import type { Difficulty, Problem } from '../../types/judge';
 import { 
   X, 
   Plus, 
   Database, 
-  Code2, 
   Clock, 
   Cpu, 
-  FileText
+  FileText,
+  Code2
 } from 'lucide-react';
 
 interface Props {
@@ -26,6 +27,7 @@ const AVAILABLE_TAGS = [
   'Greedy', 
   'Depth-First Search', 
   'Binary Search', 
+  'Breadth-First Search', 
   'Tree', 
   'Graph', 
   'Two Pointers', 
@@ -33,7 +35,8 @@ const AVAILABLE_TAGS = [
 ];
 
 export const CreateProblemModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const { addNewProblem, navigateToProblem, problems } = useJudge();
+  const { addNewProblem, problems } = useJudge();
+  const navigate = useNavigate();
 
   const [title, setTitle] = useState('');
   const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
@@ -120,7 +123,7 @@ export const CreateProblemModal: React.FC<Props> = ({ isOpen, onClose }) => {
       addNewProblem(newProblem);
       setIsSubmitting(false);
       onClose();
-      navigateToProblem(newId);
+      navigate(`/problems/${newProblem.slug || newId}`);
     }, 400);
   };
 

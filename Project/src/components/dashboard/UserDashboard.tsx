@@ -1,14 +1,39 @@
 import React, { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
 import { VerdictBadge } from '../common/VerdictBadge';
 
+function computeStreak(submissions: Array<{verdict: string; createdAt?: string; timestamp?: string; submittedAt?: string}>): number {
+  const acceptedDays = new Set(
+    submissions
+      .filter(s => s.verdict === 'Accepted')
+      .map(s => {
+        const d = new Date(s.createdAt ?? s.timestamp ?? s.submittedAt ?? '');
+        return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+      })
+      .filter(Boolean)
+  );
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    if (acceptedDays.has(key)) { streak++; } else { break; }
+  }
+  return streak;
+}
+
 export const UserDashboard: React.FC = () => {
-  const { currentUser, submissions, problems, navigateToProblem, isProblemSolved } = useJudge();
+  const { currentUser, submissions, problems, isProblemSolved } = useJudge();
+  const navigate = useNavigate();
   const [hoveredCell, setHoveredCell] = useState<{ count: number; dateStr: string } | null>(null);
 
   const userSubmissions = useMemo(() => {
     return submissions.filter(s => s.userId === currentUser?.id || !s.userId);
   }, [submissions, currentUser]);
+
+  const streak = computeStreak(userSubmissions);
 
   const acceptedCount = useMemo(() => {
     return userSubmissions.filter(s => s.verdict === 'Accepted').length;
@@ -89,8 +114,8 @@ export const UserDashboard: React.FC = () => {
 
   const getHeatmapColor = (count: number) => {
     if (count === 0) return 'var(--bg-elevated)';
-    if (count === 1) return 'rgba(139,92,246,0.3)';
-    if (count <= 3) return 'rgba(139,92,246,0.55)';
+    if (count === 1) return 'var(--accent-dim)';
+    if (count <= 3) return 'var(--accent-border)';
     return 'var(--accent)';
   };
 
@@ -125,7 +150,7 @@ export const UserDashboard: React.FC = () => {
           <span>·</span>
           <span>Rank #{currentUser.rank || 0}</span>
           <span>·</span>
-          <span>0 day streak</span>
+          <span>{streak} day streak</span>
         </div>
       </div>
 
@@ -320,8 +345,8 @@ export const UserDashboard: React.FC = () => {
         <div className="flex items-center justify-end gap-1.5 text-[11px] text-[var(--text-3)]">
           <span>Less</span>
           <span className="w-[10px] h-[10px] rounded-[2px] bg-[var(--bg-elevated)]" />
-          <span className="w-[10px] h-[10px] rounded-[2px] bg-[rgba(139,92,246,0.3)]" />
-          <span className="w-[10px] h-[10px] rounded-[2px] bg-[rgba(139,92,246,0.55)]" />
+          <span className="w-[10px] h-[10px] rounded-[2px] bg-[var(--accent-dim)]" />
+          <span className="w-[10px] h-[10px] rounded-[2px] bg-[var(--accent-border)]" />
           <span className="w-[10px] h-[10px] rounded-[2px] bg-[var(--accent)]" />
           <span>More</span>
         </div>
@@ -360,7 +385,10 @@ export const UserDashboard: React.FC = () => {
                 userSubmissions.slice(0, 5).map((sub, idx) => (
                   <tr 
                     key={sub.id} 
-                    onClick={() => navigateToProblem(sub.problemId)}
+                    onClick={() => {
+                      const prob = problems.find(p => p.id === sub.problemId);
+                      navigate(`/problems/${prob?.slug || sub.problemId}`);
+                    }}
                     className={`h-[52px] hover:bg-[var(--bg-hover)] cursor-pointer transition-colors ${
                       idx % 2 === 1 ? 'bg-[var(--bg-card)]' : 'bg-transparent'
                     }`}

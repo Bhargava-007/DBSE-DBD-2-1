@@ -8,7 +8,7 @@ import { Problem } from './models/Problem';
 import { Contest } from './models/Contest';
 import { Submission } from './models/Submission';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/codejudge';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/algoflow';
 
 async function seedDatabase() {
   try {

@@ -84,26 +84,50 @@ const startServer = async () => {
     });
 
     // Graceful Shutdown
-    const shutdown = async () => {
-      console.log('\n[Contest Service] Initiating graceful shutdown...');
+    let isShuttingDown = false;
+    const shutdown = async (signal: string) => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+      console.log(`\n[Contest Service] Received ${signal}. Initiating graceful shutdown...`);
+
       try {
+        // Step 1: Stop cron & socket, and close HTTP server
         contestLifecycle.stop();
         io.close();
-        httpServer.close(() => {
-          console.log('[Contest Service] HTTP Server stopped.');
+        await new Promise<void>((resolve) => {
+          httpServer.close((err) => {
+            if (err) console.warn('[Contest Service] HTTP server close notice:', err.message);
+            console.log('[Contest Service] 1. HTTP server closed.');
+            resolve();
+          });
         });
-        await disconnectDB();
-        await redisClient.quit();
-        console.log('[Contest Service] All services terminated safely.');
+
+        // Step 2: Disconnect MongoDB
+        try {
+          await disconnectDB();
+          console.log('[Contest Service] 2. MongoDB disconnected.');
+        } catch (dbErr: any) {
+          console.warn('[Contest Service] MongoDB disconnect notice:', dbErr.message);
+        }
+
+        // Step 3: Disconnect Redis
+        try {
+          await redisClient.quit();
+          console.log('[Contest Service] 3. Redis disconnected.');
+        } catch (redisErr: any) {
+          console.warn('[Contest Service] Redis disconnect notice:', redisErr.message);
+        }
+
+        console.log('[Contest Service] Graceful shutdown completed. Exiting code 0.');
         process.exit(0);
-      } catch (err) {
+      } catch (err: any) {
         console.error('[Contest Service] Error during shutdown:', err);
         process.exit(1);
       }
     };
 
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error: any) {
     console.error('[Contest Service] Fatal startup error:', error);
     process.exit(1);

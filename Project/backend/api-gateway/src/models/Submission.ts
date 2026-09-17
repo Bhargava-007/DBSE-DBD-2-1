@@ -109,4 +109,10 @@ const SubmissionSchema = new Schema<ISubmission>(
   }
 );
 
+// Compound & Performance Indexes
+SubmissionSchema.index({ userId: 1, createdAt: -1 });
+SubmissionSchema.index({ problemId: 1, verdict: 1 });
+SubmissionSchema.index({ contestId: 1, verdict: 1 });
+SubmissionSchema.index({ createdAt: -1 });
+
 export const Submission = mongoose.model<ISubmission>('Submission', SubmissionSchema);

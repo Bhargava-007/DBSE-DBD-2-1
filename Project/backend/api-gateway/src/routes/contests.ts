@@ -16,7 +16,9 @@ const createContestSchema = z.object({
   startTime: z.string().datetime({ message: 'Must be a valid ISO datetime string' }),
   endTime: z.string().datetime({ message: 'Must be a valid ISO datetime string' }),
   durationMinutes: z.number().min(10).max(10080).default(90),
-  problemIds: z.array(z.string()).default([]),
+  problemIds: z.array(z.string()).optional().default([]),
+  problems: z.array(z.union([z.string(), z.record(z.any())])).optional(),
+  scoringMode: z.string().optional().default('ICPC'),
   bannerBadge: z.string().optional(),
 });
 
@@ -124,12 +126,12 @@ router.get(
 
 /**
  * POST /api/contests
- * Create a new tournament round (Admin only)
+ * Create a new tournament round (Admin and Setter only)
  */
 router.post(
   '/',
   authenticate,
-  authorize('admin'),
+  authorize('admin', 'setter'),
   validate(createContestSchema),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -152,13 +154,28 @@ router.post(
         finalSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 6)}`;
       }
 
+      const rawProblemIds = (payload.problemIds && payload.problemIds.length > 0)
+        ? payload.problemIds
+        : (payload.problems || []).map((p: any) => (typeof p === 'string' ? p : p._id || p.id)).filter(Boolean);
+
+      const now = new Date();
+      let status: 'upcoming' | 'live' | 'ended' = 'upcoming';
+      if (now >= startTime && now <= endTime) status = 'live';
+      else if (now > endTime) status = 'ended';
+
       const contest = new Contest({
-        ...payload,
+        title: payload.title,
         slug: finalSlug,
+        description: payload.description,
         startTime,
         endTime,
+        durationMinutes: payload.durationMinutes || 90,
+        problemIds: rawProblemIds,
+        scoringMode: payload.scoringMode || 'ICPC',
+        bannerBadge: payload.bannerBadge || (payload.scoringMode === 'ICPC' ? 'ICPC Scoring • 20m Penalty' : 'Rated (Div. 1 + Div. 2)'),
         createdBy: req.userId,
         registeredUserIds: [],
+        status,
       });
 
       await contest.save();

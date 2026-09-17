@@ -1,7 +1,19 @@
 import React, { useState } from 'react';
 import { useJudge } from '../../context/JudgeContext';
-import { DEMO_USERS } from '../../mock/mockUsers';
 import { Lock, Mail, User, X, ArrowRight, ShieldCheck } from 'lucide-react';
+interface DemoUser {
+  id: string;
+  username: string;
+  name: string;
+  role: 'admin' | 'setter' | 'user';
+  rating: number;
+}
+
+const DEMO_USERS: DemoUser[] = [
+  { id: 'usr_892144', username: 'alex_dev', name: 'Alex Chen', role: 'admin', rating: 1842 },
+  { id: 'usr_892145', username: 'sarah_k', name: 'Sarah Kim', role: 'setter', rating: 1910 },
+  { id: 'usr_892146', username: 'marcus_v', name: 'Marcus Vance', role: 'user', rating: 1725 },
+];
 
 export const AuthModal: React.FC = () => {
   const { 
@@ -9,7 +21,6 @@ export const AuthModal: React.FC = () => {
     setIsAuthModalOpen, 
     authModalMode, 
     setAuthModalMode, 
-    setCurrentUser,
     loginUser,
     registerUser 
   } = useJudge();
@@ -49,9 +60,32 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = (user: typeof DEMO_USERS[0]) => {
-    setCurrentUser(user);
-    setIsAuthModalOpen(false);
+  const handleQuickLogin = async (user: typeof DEMO_USERS[0]) => {
+    setError('');
+
+    // Map mock quick-login user to real database demo credentials
+    const credentialsMap: Record<string, { username: string; password: string }> = {
+      alex_dev: { username: 'admin', password: 'Admin@123' },
+      sarah_k: { username: 'setter', password: 'Setter@123' },
+      marcus_v: { username: 'bhargava', password: 'User@123' },
+      admin: { username: 'admin', password: 'Admin@123' },
+      setter: { username: 'setter', password: 'Setter@123' },
+      bhargava: { username: 'bhargava', password: 'User@123' },
+    };
+
+    const creds =
+      credentialsMap[user.username] ||
+      (user.role === 'admin'
+        ? credentialsMap.admin
+        : user.role === 'setter'
+        ? credentialsMap.setter
+        : credentialsMap.bhargava);
+
+    try {
+      await loginUser(creds.username, creds.password);
+    } catch (err: any) {
+      setError(err.message || 'Quick login failed.');
+    }
   };
 
   return (

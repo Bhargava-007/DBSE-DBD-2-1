@@ -148,4 +148,10 @@ const ProblemSchema = new Schema<IProblem>(
   }
 );
 
+// Compound & Single Indexes for high-frequency queries
+ProblemSchema.index({ difficulty: 1 });
+ProblemSchema.index({ tags: 1 });
+ProblemSchema.index({ difficulty: 1, tags: 1 });
+ProblemSchema.index({ isPublished: 1, createdAt: -1 });
+
 export const Problem = mongoose.model<IProblem>('Problem', ProblemSchema);

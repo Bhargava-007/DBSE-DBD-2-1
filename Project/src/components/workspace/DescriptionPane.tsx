@@ -27,19 +27,19 @@ export const DescriptionPane: React.FC<Props> = ({
   const problemSubmissions = submissions.filter(s => s.problemId === problem.id);
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-card)] text-[var(--text-1)] overflow-hidden font-sans transition-colors">
+    <div className="h-full flex flex-col bg-[var(--carbon)] text-[var(--bone)] overflow-hidden font-sans">
       
       {/* Top Tab Bar */}
-      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3 shrink-0 select-none">
+      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--carbon)] px-3 shrink-0 select-none font-mono">
         
         {/* Navigation Tabs */}
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => { setActiveTab('statement'); setViewingSubmission(null); }}
-            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-sm)] text-xs font-medium cursor-pointer transition-colors ${
               activeTab === 'statement'
-                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
-                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
+                ? 'text-[var(--bone)] bg-[var(--ash)] border border-[var(--border)] font-semibold'
+                : 'text-[var(--text-3)] hover:text-[var(--bone)] hover:bg-[var(--ash)]'
             }`}
           >
             <span>Statement</span>
@@ -47,15 +47,15 @@ export const DescriptionPane: React.FC<Props> = ({
 
           <button
             onClick={() => setActiveTab('submissions')}
-            className={`h-7 flex items-center gap-1.5 px-3 rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+            className={`h-7 flex items-center gap-1.5 px-3 rounded-[var(--r-sm)] text-xs font-medium cursor-pointer transition-colors ${
               activeTab === 'submissions'
-                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
-                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
+                ? 'text-[var(--bone)] bg-[var(--ash)] border border-[var(--border)] font-semibold'
+                : 'text-[var(--text-3)] hover:text-[var(--bone)] hover:bg-[var(--ash)]'
             }`}
           >
             <span>Submissions</span>
             {problemSubmissions.length > 0 && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-[var(--bg-canvas)] text-[var(--text-2)] border border-[var(--border)]">
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[var(--carbon)] text-[var(--verdigris)] border border-[var(--border)]">
                 {problemSubmissions.length}
               </span>
             )}
@@ -63,10 +63,10 @@ export const DescriptionPane: React.FC<Props> = ({
 
           <button
             onClick={() => { setActiveTab('solution'); setViewingSubmission(null); }}
-            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-sm)] text-xs font-medium cursor-pointer transition-colors ${
               activeTab === 'solution'
-                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
-                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
+                ? 'text-[var(--bone)] bg-[var(--ash)] border border-[var(--border)] font-semibold'
+                : 'text-[var(--text-3)] hover:text-[var(--bone)] hover:bg-[var(--ash)]'
             }`}
           >
             <span>Solution</span>
@@ -74,10 +74,10 @@ export const DescriptionPane: React.FC<Props> = ({
 
           <button
             onClick={() => { setActiveTab('help'); setViewingSubmission(null); }}
-            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-md)] text-[12px] font-medium cursor-pointer transition-colors ${
+            className={`h-7 px-3 flex items-center justify-center rounded-[var(--r-sm)] text-xs font-medium cursor-pointer transition-colors ${
               activeTab === 'help'
-                ? 'text-[var(--text-1)] bg-[var(--bg-elevated)] border border-[var(--border)] font-semibold shadow-xs'
-                : 'text-[var(--text-2)] hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)]'
+                ? 'text-[var(--bone)] bg-[var(--ash)] border border-[var(--border)] font-semibold'
+                : 'text-[var(--text-3)] hover:text-[var(--bone)] hover:bg-[var(--ash)]'
             }`}
           >
             <span>Help</span>
@@ -104,31 +104,31 @@ export const DescriptionPane: React.FC<Props> = ({
           <div className="space-y-6">
             
             {/* Title & Author Meta */}
-            <div className="space-y-1.5 pb-3 border-b border-[var(--border)]">
-              <h1 className="text-[18px] font-semibold text-[var(--text-1)] tracking-tight">
+            <div className="space-y-1.5 pb-3.5 border-b border-[var(--border)]">
+              <h1 className="text-xl font-bold text-[var(--bone)] tracking-tight">
                 {problem.title}
               </h1>
-              <div className="flex flex-wrap items-center gap-3 text-[12px] text-[var(--text-2)]">
-                <span>Author: <strong className="text-[var(--text-1)] font-medium">{problem.author}</strong></span>
+              <div className="flex flex-wrap items-center gap-3 text-xs font-mono text-[var(--text-3)]">
+                <span>AUTHOR: <strong className="text-[var(--bone)]">{problem.author}</strong></span>
                 <span>·</span>
-                <span>Success Rate: <strong className="font-mono text-[var(--text-1)]">{problem.acceptanceRate}%</strong></span>
+                <span>ACCEPTANCE: <strong className="text-[var(--verdigris)]">{problem.acceptanceRate}%</strong></span>
                 <span>·</span>
-                <span>Submissions: <strong className="font-mono text-[var(--text-1)]">{problem.submissionsCount.toLocaleString()}</strong></span>
+                <span>SUBMISSIONS: <strong className="text-[var(--bone)]">{problem.submissionsCount.toLocaleString()}</strong></span>
               </div>
             </div>
 
             {/* Problem Description */}
-            <div className="text-[var(--text-1)] text-[13px] leading-6 space-y-3 font-normal whitespace-pre-line">
+            <div className="text-[var(--bone)] text-[13px] leading-relaxed space-y-3 font-normal whitespace-pre-line">
               {problem.description}
             </div>
 
             {/* Constraints */}
             <div className="space-y-2 pt-2">
-              <div className="section-label">
+              <div className="section-label font-mono text-xs">
                 Constraints
               </div>
-              <div className="p-3 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
-                <ul className="space-y-1 text-[12px] font-mono text-[var(--text-1)] pl-4 list-disc">
+              <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                <ul className="space-y-1 text-xs font-mono text-[var(--bone)] pl-4 list-disc">
                   {problem.constraints.map((constraint, idx) => (
                     <li key={idx} className="leading-relaxed">
                       <code>{constraint}</code>
@@ -140,30 +140,30 @@ export const DescriptionPane: React.FC<Props> = ({
 
             {/* Sample Examples */}
             <div className="space-y-4 pt-2">
-              <div className="section-label">
+              <div className="section-label font-mono text-xs">
                 Sample Test Cases
               </div>
 
               {problem.sampleTestCases.map((tc, idx) => (
                 <div 
                   key={tc.id} 
-                  className="rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] overflow-hidden"
+                  className="rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] overflow-hidden"
                 >
-                  <div className="px-3.5 py-1.5 bg-[var(--bg-card)] border-b border-[var(--border)] flex items-center justify-between text-[12px] font-medium text-[var(--text-2)]">
-                    <span className="font-medium text-[var(--text-1)]">Example {idx + 1}</span>
+                  <div className="px-3.5 py-1.5 bg-[var(--carbon)] border-b border-[var(--border)] flex items-center justify-between text-xs font-mono text-[var(--text-2)]">
+                    <span className="font-semibold text-[var(--bone)]">Example {idx + 1}</span>
                   </div>
-                  <div className="p-3.5 font-mono space-y-2.5 text-[12px]">
+                  <div className="p-3.5 font-mono space-y-2.5 text-xs">
                     <div>
-                      <span className="text-[var(--text-3)] font-sans text-[11px] block mb-1">Input:</span>
-                      <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-canvas)] text-[var(--text-1)] whitespace-pre-wrap border border-[var(--border)] overflow-x-auto">{tc.input}</pre>
+                      <span className="text-[var(--text-3)] block mb-1">Input:</span>
+                      <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--obsidian)] text-[var(--bone)] whitespace-pre-wrap border border-[var(--border)] overflow-x-auto">{tc.input}</pre>
                     </div>
                     <div>
-                      <span className="text-[var(--text-3)] font-sans text-[11px] block mb-1">Expected Output:</span>
-                      <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--bg-canvas)] text-[var(--green)] whitespace-pre-wrap border border-[var(--border)] overflow-x-auto">{tc.expectedOutput}</pre>
+                      <span className="text-[var(--text-3)] block mb-1">Expected Output:</span>
+                      <pre className="p-2.5 rounded-[var(--r-sm)] bg-[var(--obsidian)] text-[var(--verdigris)] whitespace-pre-wrap border border-[var(--border)] overflow-x-auto font-semibold">{tc.expectedOutput}</pre>
                     </div>
                     {tc.explanation && (
-                      <div className="text-[var(--text-2)] text-[12px] font-sans pt-1">
-                        <strong className="text-[var(--text-1)]">Explanation: </strong>
+                      <div className="text-[var(--text-2)] text-xs font-sans pt-1">
+                        <strong className="text-[var(--bone)]">Explanation: </strong>
                         {tc.explanation}
                       </div>
                     )}
@@ -173,15 +173,15 @@ export const DescriptionPane: React.FC<Props> = ({
             </div>
 
             {/* Tags */}
-            <div className="pt-2">
-              <div className="section-label mb-2">
-                Topics & Tags
+            <div className="pt-2 font-mono">
+              <div className="section-label mb-2 text-xs">
+                Topic Tags
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {problem.tags.map(tag => (
                   <span 
                     key={tag} 
-                    className="tag-pill"
+                    className="px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] text-xs text-[var(--text-2)] font-mono"
                   >
                     #{tag}
                   </span>
@@ -194,46 +194,46 @@ export const DescriptionPane: React.FC<Props> = ({
 
         {/* Tab 2: Submissions */}
         {activeTab === 'submissions' && (
-          <div className="space-y-4">
+          <div className="space-y-4 font-mono">
             <div className="flex items-center justify-between">
-              <span className="text-[14px] font-semibold text-[var(--text-1)]">Your Problem Submissions</span>
-              <span className="text-[12px] text-[var(--text-3)]">{problemSubmissions.length} total</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--bone)]">Submission Ledger</span>
+              <span className="text-xs text-[var(--text-3)]">{problemSubmissions.length} logged</span>
             </div>
 
             {problemSubmissions.length === 0 ? (
-              <div className="text-center py-12 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-2">
+              <div className="text-center py-12 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
                 <History className="w-6 h-6 text-[var(--text-3)] mx-auto opacity-50" />
-                <div className="text-[13px] text-[var(--text-2)] font-medium">No submissions recorded for this challenge yet.</div>
-                <div className="text-[12px] text-[var(--text-3)]">Run or submit your solution to evaluate your code.</div>
+                <div className="text-xs text-[var(--text-2)] font-sans">No submissions recorded for this challenge yet.</div>
+                <div className="text-[11px] text-[var(--text-3)]">Run or submit your solution to evaluate your code.</div>
               </div>
             ) : (
               <div className="space-y-2.5">
                 {problemSubmissions.map(sub => (
                   <div 
                     key={sub.id}
-                    className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-mid)] transition-colors space-y-2.5"
+                    className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] hover:border-[var(--border-strong)] transition-colors space-y-2.5"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <VerdictBadge verdict={sub.verdict} />
-                        <span className="text-[12px] font-mono text-[var(--text-2)]">
+                        <span className="uppercase text-[var(--text-2)]">
                           {sub.language}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[var(--text-3)] font-mono">
+                      <span className="text-[11px] text-[var(--text-3)]">
                         {new Date(sub.submittedAt).toLocaleTimeString()}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-[12px] font-mono text-[var(--text-2)] pt-1 border-t border-[var(--border)]">
-                      <div>Time: <strong className="text-[var(--text-1)]">{sub.executionTimeMs}ms</strong></div>
-                      <div>Memory: <strong className="text-[var(--text-1)]">{(sub.memoryKb / 1024).toFixed(1)}MB</strong></div>
+                    <div className="grid grid-cols-2 gap-2 text-xs text-[var(--text-3)] pt-1 border-t border-[var(--border)]">
+                      <div>RUNTIME: <strong className="text-[var(--bone)]">{sub.executionTimeMs}ms</strong></div>
+                      <div>MEMORY: <strong className="text-[var(--bone)]">{(sub.memoryKb / 1024).toFixed(1)}MB</strong></div>
                     </div>
 
-                    <div className="pt-2 flex items-center justify-between">
+                    <div className="pt-1 flex items-center justify-between">
                       <button
                         onClick={() => setViewingSubmission(viewingSubmission?.id === sub.id ? null : sub)}
-                        className="text-[12px] text-[var(--accent)] hover:underline font-medium"
+                        className="text-xs text-[var(--verdigris)] hover:underline cursor-pointer"
                       >
                         {viewingSubmission?.id === sub.id ? 'Hide Code' : 'View Code'}
                       </button>
@@ -241,7 +241,7 @@ export const DescriptionPane: React.FC<Props> = ({
                       {onSelectSubmissionCode && (
                         <button
                           onClick={() => onSelectSubmissionCode(sub.code, sub.language)}
-                          className="flex items-center gap-1 text-[12px] text-[var(--green)] hover:underline font-medium"
+                          className="flex items-center gap-1 text-xs text-[var(--bone)] hover:text-[var(--verdigris)] transition-colors cursor-pointer"
                         >
                           <Code2 className="w-3 h-3" />
                           <span>Load in Editor</span>
@@ -251,7 +251,7 @@ export const DescriptionPane: React.FC<Props> = ({
 
                     {/* Expandable Code Inspector */}
                     {viewingSubmission?.id === sub.id && (
-                      <pre className="p-3 rounded-[var(--r-sm)] bg-[var(--bg-canvas)] text-[12px] font-mono text-[var(--text-1)] overflow-x-auto border border-[var(--border)] max-h-60 leading-5">
+                      <pre className="p-3 rounded-[var(--r-sm)] bg-[var(--obsidian)] text-xs text-[var(--bone)] overflow-x-auto border border-[var(--border)] max-h-60 leading-relaxed">
                         {sub.code}
                       </pre>
                     )}
@@ -264,36 +264,36 @@ export const DescriptionPane: React.FC<Props> = ({
 
         {/* Tab 3: Solution / Editorial */}
         {activeTab === 'solution' && (
-          <div className="space-y-5">
+          <div className="space-y-5 font-sans">
             <div className="space-y-1 pb-3 border-b border-[var(--border)]">
-              <h2 className="text-[15px] font-semibold text-[var(--text-1)] tracking-tight flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-[var(--amber)]" />
-                <span>Editorial & Optimal Solution</span>
+              <h2 className="text-sm font-bold text-[var(--bone)] font-mono uppercase tracking-wider flex items-center gap-2">
+                <Lightbulb className="w-4 h-4 text-[var(--verdigris)]" />
+                <span>Editorial & Complexity Analysis</span>
               </h2>
-              <p className="text-[12px] text-[var(--text-2)]">
-                Algorithmic approaches and complexity breakdown.
+              <p className="text-xs text-[var(--text-2)]">
+                Algorithmic approaches and asymptotic complexity bounds.
               </p>
             </div>
 
-            <div className="space-y-4 text-[13px] leading-relaxed text-[var(--text-2)]">
-              <div className="p-3.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] space-y-2">
-                <h4 className="font-semibold text-[var(--text-1)] text-[13px]">Approach & Intuition</h4>
+            <div className="space-y-4 text-xs leading-relaxed text-[var(--text-2)]">
+              <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
+                <h4 className="font-semibold text-[var(--bone)]">Approach & Invariants</h4>
                 <p>
-                  To solve <strong className="text-[var(--text-1)]">{problem.title}</strong> efficiently within the {problem.timeLimitMs}ms time limit, optimal algorithms use hash indexing or two-pointer techniques to achieve linear time complexity.
+                  To solve <strong className="text-[var(--bone)]">{problem.title}</strong> within the {problem.timeLimitMs}ms ceiling, optimal approaches utilize hash tracking or divide-and-conquer to maintain deterministic linear time complexity.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
-                  <div className="section-label mb-1">Time Complexity</div>
-                  <div className="font-mono text-[var(--green)] font-semibold text-[13px]">O(N) / O(log N)</div>
-                  <div className="text-[11px] text-[var(--text-3)] mt-1">Single pass hash lookup or divide-and-conquer</div>
+              <div className="grid grid-cols-2 gap-3 font-mono">
+                <div className="p-3 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                  <div className="text-[10px] uppercase text-[var(--text-3)] mb-1">Time Complexity</div>
+                  <div className="text-[var(--verdigris)] font-bold text-sm">O(N)</div>
+                  <div className="text-[10px] text-[var(--text-3)] mt-1">Single pass linear lookup</div>
                 </div>
 
-                <div className="p-3 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
-                  <div className="section-label mb-1">Space Complexity</div>
-                  <div className="font-mono text-[var(--accent)] font-semibold text-[13px]">O(N) auxiliary</div>
-                  <div className="text-[11px] text-[var(--text-3)] mt-1">Under the {problem.memoryLimitMb}MB threshold</div>
+                <div className="p-3 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                  <div className="text-[10px] uppercase text-[var(--text-3)] mb-1">Space Complexity</div>
+                  <div className="text-[var(--verdigris)] font-bold text-sm">O(N) / O(1)</div>
+                  <div className="text-[10px] text-[var(--text-3)] mt-1">Under the {problem.memoryLimitMb}MB limit</div>
                 </div>
               </div>
             </div>
@@ -302,33 +302,33 @@ export const DescriptionPane: React.FC<Props> = ({
 
         {/* Tab 4: Help & Shortcuts */}
         {activeTab === 'help' && (
-          <div className="space-y-5">
+          <div className="space-y-5 font-sans">
             <div className="space-y-1 pb-3 border-b border-[var(--border)]">
-              <h2 className="text-[15px] font-semibold text-[var(--text-1)] tracking-tight flex items-center gap-2">
-                <HelpCircle className="w-4 h-4 text-[var(--accent)]" />
-                <span>Shortcuts & Platform Help</span>
+              <h2 className="text-sm font-bold text-[var(--bone)] font-mono uppercase tracking-wider flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-[var(--verdigris)]" />
+                <span>Shortcuts & Platform Protocol</span>
               </h2>
-              <p className="text-[12px] text-[var(--text-2)]">
+              <p className="text-xs text-[var(--text-2)]">
                 Keybindings and execution tips for competitive programming.
               </p>
             </div>
 
-            <div className="space-y-2.5">
-              <div className="section-label">
+            <div className="space-y-2.5 font-mono">
+              <div className="section-label text-xs">
                 Keyboard Shortcuts
               </div>
-              <div className="space-y-1.5 font-mono text-[12px]">
-                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
-                  <span className="text-[var(--text-2)] font-sans">Run Test Cases</span>
-                  <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)]">Ctrl + Enter</kbd>
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)]">Run Test Cases</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] text-[var(--bone)] border border-[var(--border)]">Ctrl + Enter</kbd>
                 </div>
-                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
-                  <span className="text-[var(--text-2)] font-sans">Submit Solution</span>
-                  <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)]">Ctrl + Shift + Enter</kbd>
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)]">Submit Solution</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] text-[var(--verdigris)] border border-[var(--border)]">Ctrl + Shift + Enter</kbd>
                 </div>
-                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)]">
-                  <span className="text-[var(--text-2)] font-sans">Command Palette</span>
-                  <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] text-[var(--text-1)] border border-[var(--border)]">Ctrl + K</kbd>
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)]">Command Palette</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] text-[var(--bone)] border border-[var(--border)]">Ctrl + K</kbd>
                 </div>
               </div>
             </div>
@@ -339,5 +339,3 @@ export const DescriptionPane: React.FC<Props> = ({
     </div>
   );
 };
-
-

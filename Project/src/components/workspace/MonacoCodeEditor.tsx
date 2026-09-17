@@ -52,27 +52,27 @@ export const MonacoCodeEditor: React.FC<Props> = ({
       base: 'vs-dark',
       inherit: true,
       rules: [
-        { token: 'comment', foreground: '52525b', fontStyle: 'italic' },
-        { token: 'keyword', foreground: 'f43f5e', fontStyle: 'bold' },
-        { token: 'string', foreground: '10b981' },
-        { token: 'number', foreground: 'f59e0b' },
-        { token: 'type', foreground: '8b5cf6' },
-        { token: 'function', foreground: 'a78bfa' },
-        { token: 'identifier', foreground: 'fafafa' },
+        { token: 'comment', foreground: '68665E', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'F87171', fontStyle: 'bold' },
+        { token: 'string', foreground: '62D6C5' },
+        { token: 'number', foreground: 'FBBF24' },
+        { token: 'type', foreground: '62D6C5' },
+        { token: 'function', foreground: 'F2F0E9' },
+        { token: 'identifier', foreground: 'F2F0E9' },
       ],
       colors: {
-        'editor.background': '#0a0a0b',
-        'editor.foreground': '#fafafa',
-        'editor.lineHighlightBackground': '#111113',
-        'editorLineNumber.foreground': '#3f3f46',
-        'editorLineNumber.activeForeground': '#8b5cf6',
-        'editorCursor.foreground': '#8b5cf6',
-        'editor.selectionBackground': '#8b5cf633',
-        'editorGutter.background': '#0a0a0b',
-        'scrollbarSlider.background': '#27272a80',
-        'scrollbarSlider.hoverBackground': '#3f3f46',
-        'editorIndentGuide.background1': '#18181b',
-        'editorIndentGuide.activeBackground1': '#8b5cf660',
+        'editor.background': '#090A0C',
+        'editor.foreground': '#F2F0E9',
+        'editor.lineHighlightBackground': '#101216',
+        'editorLineNumber.foreground': '#45433D',
+        'editorLineNumber.activeForeground': '#62D6C5',
+        'editorCursor.foreground': '#62D6C5',
+        'editor.selectionBackground': '#62D6C533',
+        'editorGutter.background': '#090A0C',
+        'scrollbarSlider.background': '#191C2180',
+        'scrollbarSlider.hoverBackground': '#2A2F38',
+        'editorIndentGuide.background1': '#191C21',
+        'editorIndentGuide.activeBackground1': '#62D6C550',
       },
     });
 
@@ -84,8 +84,8 @@ export const MonacoCodeEditor: React.FC<Props> = ({
         { token: 'keyword', foreground: 'e11d48', fontStyle: 'bold' },
         { token: 'string', foreground: '059669' },
         { token: 'number', foreground: 'd97706' },
-        { token: 'type', foreground: '7c3aed' },
-        { token: 'function', foreground: '6d28d9' },
+        { token: 'type', foreground: '059669' },
+        { token: 'function', foreground: '0f172a' },
         { token: 'identifier', foreground: '0f172a' },
       ],
       colors: {
@@ -93,9 +93,9 @@ export const MonacoCodeEditor: React.FC<Props> = ({
         'editor.foreground': '#0f172a',
         'editor.lineHighlightBackground': '#f8fafc',
         'editorLineNumber.foreground': '#94a3b8',
-        'editorLineNumber.activeForeground': '#8b5cf6',
-        'editorCursor.foreground': '#8b5cf6',
-        'editor.selectionBackground': '#8b5cf630',
+        'editorLineNumber.activeForeground': '#059669',
+        'editorCursor.foreground': '#059669',
+        'editor.selectionBackground': '#05966930',
         'editorGutter.background': '#ffffff',
         'scrollbarSlider.background': '#cbd5e160',
         'scrollbarSlider.hoverBackground': '#94a3b8',
@@ -128,21 +128,21 @@ export const MonacoCodeEditor: React.FC<Props> = ({
   const currentLangConfig = LANGUAGE_LABELS[language];
 
   return (
-    <div className={`flex flex-col bg-[var(--bg-canvas)] text-[var(--text-1)] overflow-hidden font-sans transition-colors ${
+    <div className={`flex flex-col bg-[var(--obsidian)] text-[var(--bone)] overflow-hidden font-sans ${
       isFullscreen ? 'fixed inset-2 z-50 rounded-[var(--r-lg)] shadow-[var(--shadow-lg)] border border-[var(--border-strong)]' : 'h-full'
     }`}>
       
       {/* Top Toolbar */}
-      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg-card)] px-3 shrink-0 select-none">
+      <div className="h-9 flex items-center justify-between border-b border-[var(--border)] bg-[var(--carbon)] px-3 shrink-0 select-none font-mono">
         
         {/* Left: Language Selector */}
         <div className="relative">
           <button
             onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-            className="flex items-center gap-2 px-2.5 py-1 rounded-[var(--r-md)] bg-[var(--bg-elevated)] border border-[var(--border)] hover:border-[var(--border-strong)] text-[12px] font-medium text-[var(--text-1)] transition-colors"
+            className="flex items-center gap-2 px-2.5 py-1 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] hover:border-[var(--border-strong)] text-xs font-medium text-[var(--bone)] transition-colors"
           >
             <span>{currentLangConfig.label}</span>
-            <span className="text-[10px] text-[var(--text-3)] font-mono hidden sm:inline">({currentLangConfig.version})</span>
+            <span className="text-[10px] text-[var(--text-3)] hidden sm:inline">({currentLangConfig.version})</span>
             <ChevronDown className="w-3 h-3 text-[var(--text-3)] ml-0.5" />
           </button>
 
@@ -152,7 +152,7 @@ export const MonacoCodeEditor: React.FC<Props> = ({
                 className="fixed inset-0 z-40" 
                 onClick={() => setIsLangDropdownOpen(false)} 
               />
-              <div className="absolute left-0 mt-1 w-48 rounded-[var(--r-lg)] bg-[var(--bg-elevated)] border border-[var(--border-mid)] shadow-[var(--shadow-lg)] py-1 z-50 text-[12px] animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute left-0 mt-1 w-48 rounded-[var(--r-md)] bg-[var(--ash)] border border-[var(--border)] py-1 z-50 text-xs shadow-[var(--shadow-md)]">
                 {(Object.keys(LANGUAGE_LABELS) as SupportedLanguage[]).map(langKey => {
                   const info = LANGUAGE_LABELS[langKey];
                   const isSelected = langKey === language;
@@ -163,17 +163,17 @@ export const MonacoCodeEditor: React.FC<Props> = ({
                         onLanguageChange(langKey);
                         setIsLangDropdownOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition-colors ${
+                      className={`w-full flex items-center justify-between px-3 py-1.5 text-left transition-colors cursor-pointer ${
                         isSelected 
-                          ? 'bg-[var(--accent-dim)] text-[var(--accent)] font-medium' 
-                          : 'text-[var(--text-2)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)]'
+                          ? 'bg-[var(--accent-dim)] text-[var(--verdigris)] font-semibold' 
+                          : 'text-[var(--text-2)] hover:bg-[var(--bg-hover)] hover:text-[var(--bone)]'
                       }`}
                     >
                       <div className="flex flex-col">
                         <span>{info.label}</span>
-                        <span className="text-[10px] text-[var(--text-3)] font-mono">{info.version}</span>
+                        <span className="text-[10px] text-[var(--text-3)]">{info.version}</span>
                       </div>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--accent)]" />}
+                      {isSelected && <Check className="w-3.5 h-3.5 text-[var(--verdigris)]" />}
                     </button>
                   );
                 })}
@@ -183,31 +183,31 @@ export const MonacoCodeEditor: React.FC<Props> = ({
         </div>
 
         {/* Right: Actions (Font size, Reset, Copy, Fullscreen) */}
-        <div className="flex items-center gap-1 text-[var(--text-2)] text-[12px] font-mono">
+        <div className="flex items-center gap-1 text-[var(--text-3)] text-xs">
           
           {/* Font Size Toggle */}
           <button
             onClick={() => setFontSize(prev => (prev === 13 ? 14 : prev === 14 ? 12 : 13))}
             title="Font Size (12px / 13px / 14px)"
-            className="px-2 py-0.5 rounded-[var(--r-sm)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
+            className="px-2 py-0.5 rounded-[var(--r-sm)] hover:bg-[var(--ash)] hover:text-[var(--bone)] transition-colors"
           >
             {fontSize}px
           </button>
 
           {/* Reset Code Confirmation */}
           {showResetConfirm ? (
-            <div className="flex items-center gap-1 bg-[var(--amber-dim)] border border-[var(--amber)]/30 px-2 py-0.5 rounded-[var(--r-sm)] text-[11px]">
+            <div className="flex items-center gap-1 bg-[var(--amber-dim)] border border-[var(--amber)]/40 px-2 py-0.5 rounded-[var(--r-sm)] text-[11px]">
               <AlertCircle className="w-3 h-3 text-[var(--amber)]" />
-              <span className="text-[var(--text-1)] font-sans">Reset?</span>
+              <span className="text-[var(--bone)] font-sans">Reset?</span>
               <button
                 onClick={handleConfirmReset}
-                className="font-semibold text-[var(--amber)] hover:underline ml-1"
+                className="font-semibold text-[var(--amber)] hover:underline ml-1 cursor-pointer"
               >
                 Yes
               </button>
               <button
                 onClick={() => setShowResetConfirm(false)}
-                className="text-[var(--text-3)] hover:underline ml-1"
+                className="text-[var(--text-3)] hover:underline ml-1 cursor-pointer"
               >
                 Cancel
               </button>
@@ -216,7 +216,7 @@ export const MonacoCodeEditor: React.FC<Props> = ({
             <button
               onClick={() => setShowResetConfirm(true)}
               title="Reset starter template"
-              className="p-1 rounded hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
+              className="p-1 rounded hover:bg-[var(--ash)] hover:text-[var(--bone)] transition-colors cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
             </button>
@@ -226,16 +226,16 @@ export const MonacoCodeEditor: React.FC<Props> = ({
           <button
             onClick={handleCopy}
             title={copied ? 'Copied!' : 'Copy Code'}
-            className="p-1 rounded hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
+            className="p-1 rounded hover:bg-[var(--ash)] hover:text-[var(--bone)] transition-colors cursor-pointer"
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-[var(--green)]" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5 text-[var(--verdigris)]" /> : <Copy className="w-3.5 h-3.5" />}
           </button>
 
           {/* Fullscreen Editor */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Editor'}
-            className="p-1 rounded hover:bg-[var(--bg-hover)] hover:text-[var(--text-1)] transition-colors"
+            className="p-1 rounded hover:bg-[var(--ash)] hover:text-[var(--bone)] transition-colors cursor-pointer"
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
@@ -243,7 +243,7 @@ export const MonacoCodeEditor: React.FC<Props> = ({
       </div>
 
       {/* Monaco Editor Canvas */}
-      <div className="flex-1 min-h-0 bg-[var(--bg-canvas)]">
+      <div className="flex-1 min-h-0 bg-[var(--obsidian)]">
         <Editor
           height="100%"
           language={currentLangConfig.monacoLang}
@@ -282,5 +282,3 @@ export const MonacoCodeEditor: React.FC<Props> = ({
     </div>
   );
 };
-
-

@@ -1,11 +1,78 @@
 import { Router, Request, Response } from 'express';
+import mongoose from 'mongoose';
+import { redisClient } from '../config/redis';
 import { plagiarismDetector } from '../plagiarism/PlagiarismDetector';
 import { PlagiarismReport } from '../models/PlagiarismReport';
 
 const router = Router();
 
 /**
- * POST /plagiarism/contest/:contestId/analyze
+ * POST /scan or POST /contest/:contestId/analyze
+ * Trigger full tournament plagiarism scan
+ */
+router.post('/scan', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const contestId = req.body.contestId || req.query.contestId;
+    const threshold = parseFloat(req.body.threshold) || 0.7;
+
+    if (!contestId) {
+      res.status(400).json({
+        success: false,
+        error: 'contestId is required in the request body or query parameter.',
+      });
+      return;
+    }
+
+    const report = await plagiarismDetector.analyzeContest(String(contestId), threshold);
+
+    res.status(200).json({
+      success: true,
+      data: report,
+      message: `Plagiarism analysis complete for contest ${contestId}.`,
+    });
+  } catch (error: any) {
+    console.error('[Plagiarism Route] Scan Error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to analyze contest plagiarism.',
+    });
+  }
+});
+
+/**
+ * GET /scan/:contestId
+ */
+router.get('/scan/:contestId', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { contestId } = req.params;
+
+    const report = await PlagiarismReport.findOne({ contestId })
+      .populate('matches.submission1Id', 'language executionTimeMs submittedAt')
+      .populate('matches.submission2Id', 'language executionTimeMs submittedAt');
+
+    if (!report) {
+      res.status(404).json({
+        success: false,
+        error: `No plagiarism report found for contest ${contestId}. Please run analysis first.`,
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: report,
+    });
+  } catch (error: any) {
+    console.error('[Plagiarism Route] Results Error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to retrieve plagiarism results.',
+    });
+  }
+});
+
+/**
+ * POST /contest/:contestId/analyze
  * Trigger full tournament plagiarism scan
  */
 router.post('/contest/:contestId/analyze', async (req: Request, res: Response): Promise<void> => {
@@ -30,7 +97,7 @@ router.post('/contest/:contestId/analyze', async (req: Request, res: Response): 
 });
 
 /**
- * GET /plagiarism/contest/:contestId/results
+ * GET /contest/:contestId/results
  * Fetch stored plagiarism report for a contest
  */
 router.get('/contest/:contestId/results', async (req: Request, res: Response): Promise<void> => {
@@ -63,7 +130,7 @@ router.get('/contest/:contestId/results', async (req: Request, res: Response): P
 });
 
 /**
- * POST /plagiarism/submission/:submissionId/check
+ * POST /submission/:submissionId/check
  * Check an individual submission against peer solutions
  */
 router.post('/submission/:submissionId/check', async (req: Request, res: Response): Promise<void> => {
@@ -87,15 +154,27 @@ router.post('/submission/:submissionId/check', async (req: Request, res: Respons
 });
 
 /**
- * GET /health
+ * GET /health and GET /api/health
  */
-router.get('/health', async (_req: Request, res: Response) => {
+const healthHandler = async (_req: Request, res: Response) => {
+  const isMongoOnline = mongoose.connection.readyState === 1;
+  const isRedisOnline = redisClient.status === 'ready' || redisClient.status === 'connect';
+
   res.status(200).json({
-    success: true,
-    service: 'AlgoFlow Plagiarism & Token Fingerprinting Service',
-    status: 'online',
+    service: 'plagiarism-service',
+    status: 'ok',
+    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    mongodb: isMongoOnline ? 'connected' : 'disconnected',
+    redis: isRedisOnline ? 'connected' : 'disconnected',
+    connections: {
+      mongodb: isMongoOnline ? 'connected' : 'disconnected',
+      redis: isRedisOnline ? 'connected' : 'disconnected',
+    },
   });
-});
+};
+
+router.get('/health', healthHandler);
+router.get('/api/health', healthHandler);
 
 export default router;

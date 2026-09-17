@@ -1,4 +1,5 @@
 @echo off
+set "PATH=%APPDATA%\npm;C:\Program Files\Docker\Docker\resources\bin;%PATH%"
 echo ========================================================
 echo        Starting AlgoFlow Online Judge System
 echo ========================================================
@@ -7,7 +8,7 @@ echo ========================================================
 powershell -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 27017 -InformationLevel Quiet)) { Start-Process 'C:\Program Files\MongoDB\Server\8.3\bin\mongod.exe' -ArgumentList '--dbpath \"$env:LOCALAPPDATA\MongoDB\data\" --port 27017' -WindowStyle Hidden; Write-Host '[Database] MongoDB started on port 27017.' -ForegroundColor Green } else { Write-Host '[Database] MongoDB is active on port 27017.' -ForegroundColor Cyan }"
 
 :: 2. Ensure Redis is running
-powershell -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet)) { Start-Process \"$env:LOCALAPPDATA\Redis\redis-server.exe\" -ArgumentList '--port 6379' -WindowStyle Hidden; Write-Host '[Cache/Queue] Redis server started on port 6379.' -ForegroundColor Green } else { Write-Host '[Cache/Queue] Redis is active on port 6379.' -ForegroundColor Cyan }"
+powershell -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet)) { Write-Host '[Cache/Queue] Port 6379 inactive. Starting Redis container...' -ForegroundColor Yellow; docker compose up -d redis; Start-Sleep -Seconds 3; if (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet) { Write-Host '[Cache/Queue] Redis container started on port 6379.' -ForegroundColor Green } else { Write-Host '[Cache/Queue] Warning: Redis port 6379 could not be verified. Ensure Docker Desktop is running.' -ForegroundColor Red } } else { Write-Host '[Cache/Queue] Redis is active on port 6379.' -ForegroundColor Cyan }"
 
 timeout /t 2 >nul
 

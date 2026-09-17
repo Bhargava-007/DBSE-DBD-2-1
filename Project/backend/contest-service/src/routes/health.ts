@@ -5,22 +5,27 @@ import mongoose from 'mongoose';
 
 const router = Router();
 
-router.get('/health', async (_req: Request, res: Response) => {
+const healthHandler = async (_req: Request, res: Response) => {
   const isRedisOnline = redisClient.status === 'ready' || redisClient.status === 'connect';
   const isMongoOnline = mongoose.connection.readyState === 1;
   const activeSockets = getActiveConnectionsCount();
 
   res.status(200).json({
-    success: true,
-    service: 'AlgoFlow Contest & WebSocket Service',
-    status: 'online',
+    service: 'contest-service',
+    status: 'ok',
+    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
+    mongodb: isMongoOnline ? 'connected' : 'disconnected',
+    redis: isRedisOnline ? 'connected' : 'disconnected',
     connections: {
-      mongodb: isMongoOnline ? 'connected' : 'disconnected/standby',
-      redis: isRedisOnline ? 'connected' : 'disconnected/standby',
+      mongodb: isMongoOnline ? 'connected' : 'disconnected',
+      redis: isRedisOnline ? 'connected' : 'disconnected',
       activeWebSockets: activeSockets,
     },
   });
-});
+};
+
+router.get('/health', healthHandler);
+router.get('/api/health', healthHandler);
 
 export default router;

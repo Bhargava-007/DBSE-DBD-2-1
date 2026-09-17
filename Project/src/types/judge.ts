@@ -92,12 +92,14 @@ export interface Contest {
   id: string;
   title: string;
   slug: string;
+  description?: string;
   startTime: string;
   endTime: string;
   durationMinutes: number;
   status: 'Upcoming' | 'Live' | 'Ended';
   participantCount: number;
   problemIds: string[];
+  scoringMode?: string;
   bannerBadge?: string;
 }
 

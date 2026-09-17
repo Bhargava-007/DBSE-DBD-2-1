@@ -3,41 +3,28 @@ import type {
   Problem, 
   Submission, 
   User, 
+  Contest,
   SupportedLanguage, 
   TestCaseResult, 
-  Verdict, 
-  SystemStatus 
+  Verdict 
 } from '../types/judge';
-import { MOCK_PROBLEMS } from '../mock/mockProblems';
-import { MOCK_SUBMISSIONS } from '../mock/mockSubmissions';
-import { CURRENT_USER, SYSTEM_STATUS } from '../mock/mockUsers';
 
 // API & Socket Integrations
 import * as authApi from '../api/auth';
 import * as problemsApi from '../api/problems';
 import * as submissionsApi from '../api/submissions';
+import { getContests } from '../api/contests';
 import { connectContestSocket, disconnectContestSocket } from '../socket/contestSocket';
 import { evaluateCode } from '../utils/codeEvaluator';
-
-export type ActivePage = 
-  | 'home'
-  | 'problems' 
-  | 'problem-detail' 
-  | 'dashboard' 
-  | 'contests' 
-  | 'leaderboard' 
-  | 'submissions' 
-  | 'login' 
-  | 'register';
 
 interface JudgeContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null) => void;
-  systemStatus: SystemStatus;
+  systemStatus: any;
   problems: Problem[];
+  contests: Contest[];
   submissions: Submission[];
-  activePage: ActivePage;
-  setActivePage: (page: ActivePage) => void;
+  userSubmissions: Submission[];
   activeProblemId: string;
   setActiveProblemId: (id: string) => void;
   activeProblem: Problem;
@@ -72,19 +59,28 @@ interface JudgeContextType {
   runCode: (problem: Problem, language: SupportedLanguage, code: string, customInput?: string) => Promise<TestCaseResult[]>;
   submitSolution: (problem: Problem, language: SupportedLanguage, code: string, contestId?: string) => Promise<Submission>;
   isProblemSolved: (problemId: string) => boolean;
-  navigateToProblem: (problemId: string) => void;
-  navigateToPage: (page: ActivePage) => void;
   addNewProblem: (newProblem: Problem) => Promise<void>;
 }
 
 const JudgeContext = createContext<JudgeContextType | undefined>(undefined);
 
 export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState<User | null>(CURRENT_USER);
-  const [systemStatus] = useState<SystemStatus>(SYSTEM_STATUS);
-  const [problems, setProblems] = useState<Problem[]>(MOCK_PROBLEMS);
-  const [submissions, setSubmissions] = useState<Submission[]>(MOCK_SUBMISSIONS);
-  const [activePage, setActivePage] = useState<ActivePage>('home');
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const token = localStorage.getItem('token');
+    const savedUser = localStorage.getItem('user');
+    if (token && savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
+  const [systemStatus] = useState<any>({ isOnline: true, judgeWorker: 'online', database: 'connected' });
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [contests, setContests] = useState<Contest[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [activeProblemId, setActiveProblemId] = useState<string>('prob-1');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -185,13 +181,25 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   }, []);
 
+  const loadContests = useCallback(async () => {
+    try {
+      const data = await getContests();
+      if (data && data.length > 0) {
+        setContests(data);
+      }
+    } catch {
+      console.warn('[JudgeContext] Backend contests API unavailable.');
+    }
+  }, []);
+
   useEffect(() => {
     loadProblems();
     loadSubmissions();
-  }, [loadProblems, loadSubmissions]);
+    loadContests();
+  }, [loadProblems, loadSubmissions, loadContests]);
 
   // Active Problem Resolution
-  const activeProblem = problems.find(p => p.id === activeProblemId) || problems[0] || MOCK_PROBLEMS[0];
+  const activeProblem = problems.find(p => p.id === activeProblemId) || problems[0] || {} as Problem;
 
   const isProblemSolved = (problemId: string): boolean => {
     return submissions.some(
@@ -199,18 +207,6 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
   };
 
-  const navigateToProblem = (problemId: string) => {
-    setActiveProblemId(problemId);
-    setActivePage('problem-detail');
-    setLastRunResults(null);
-    setLastSubmissionResult(null);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const navigateToPage = (page: ActivePage) => {
-    setActivePage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   // 5. Authentication Handlers
   const loginUser = async (identifier: string, password: string): Promise<void> => {
@@ -251,9 +247,9 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const logoutUser = () => {
+    setCurrentUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    setCurrentUser(null);
     disconnectContestSocket();
   };
 
@@ -522,9 +518,9 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setCurrentUser,
         systemStatus,
         problems,
+        contests,
         submissions,
-        activePage,
-        setActivePage,
+        userSubmissions: submissions,
         activeProblemId,
         setActiveProblemId,
         activeProblem,
@@ -552,8 +548,6 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         runCode,
         submitSolution,
         isProblemSolved,
-        navigateToProblem,
-        navigateToPage,
         addNewProblem,
       }}
     >
@@ -569,3 +563,24 @@ export const useJudge = () => {
   }
   return context;
 };
+
+export function saveCodeDraft(username: string, slug: string, language: string, code: string): void {
+  const key = `algoflow:code:${username}:${slug}:${language}`;
+  try { localStorage.setItem(key, code); } catch {}
+}
+
+export function loadCodeDraft(username: string, slug: string, language: string): string | null {
+  const key = `algoflow:code:${username}:${slug}:${language}`;
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+
+export function saveLanguagePref(username: string, slug: string, language: string): void {
+  const key = `algoflow:lang:${username}:${slug}`;
+  try { localStorage.setItem(key, language); } catch {}
+}
+
+export function loadLanguagePref(username: string, slug: string): string | null {
+  const key = `algoflow:lang:${username}:${slug}`;
+  try { return localStorage.getItem(key); } catch { return null; }
+}
+

@@ -1,5 +1,12 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useJudge } from '../../context/JudgeContext';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { 
+  useJudge, 
+  saveCodeDraft, 
+  loadCodeDraft, 
+  saveLanguagePref, 
+  loadLanguagePref 
+} from '../../context/JudgeContext';
 import type { SupportedLanguage } from '../../types/judge';
 import { DescriptionPane } from './DescriptionPane';
 import { MonacoCodeEditor } from './MonacoCodeEditor';
@@ -23,11 +30,11 @@ import {
 
 export const ProblemWorkspace: React.FC = () => {
   const { 
-    activeProblem, 
+    currentUser,
+    activeProblem: contextActiveProblem, 
+    setActiveProblemId,
     problems, 
     submissions, 
-    navigateToProblem, 
-    navigateToPage, 
     runCode, 
     submitSolution,
     isRunningCode,
@@ -36,13 +43,42 @@ export const ProblemWorkspace: React.FC = () => {
     lastSubmissionResult,
   } = useJudge();
 
-  const [language, setLanguage] = useState<SupportedLanguage>('cpp');
-  const [codeMap, setCodeMap] = useState<Record<SupportedLanguage, string>>({
-    cpp: activeProblem.starterCode.cpp,
-    python: activeProblem.starterCode.python,
-    java: activeProblem.starterCode.java,
-    javascript: activeProblem.starterCode.javascript,
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+
+  // Resolve problem matching URL slug or id
+  const activeProblem = useMemo(() => {
+    if (slug) {
+      const found = problems.find(p => p.slug === slug || p.id === slug);
+      if (found) return found;
+    }
+    return contextActiveProblem || problems[0];
+  }, [slug, problems, contextActiveProblem]);
+
+  const username = currentUser?.username ?? 'guest';
+  const problemKey = activeProblem?.slug || activeProblem?.id || slug || '';
+
+  // Keep context in sync
+  useEffect(() => {
+    if (activeProblem && activeProblem.id !== contextActiveProblem?.id) {
+      setActiveProblemId(activeProblem.id);
+    }
+  }, [activeProblem, contextActiveProblem, setActiveProblemId]);
+
+  const [language, setLanguage] = useState<SupportedLanguage>(() => {
+    const saved = loadLanguagePref(username, problemKey);
+    return (saved && ['cpp', 'python', 'java', 'javascript'].includes(saved))
+      ? (saved as SupportedLanguage)
+      : 'cpp';
   });
+
+  const [codeMap, setCodeMap] = useState<Record<SupportedLanguage, string>>(() => ({
+    cpp: loadCodeDraft(username, problemKey, 'cpp') ?? activeProblem?.starterCode?.cpp ?? '',
+    python: loadCodeDraft(username, problemKey, 'python') ?? activeProblem?.starterCode?.python ?? '',
+    java: loadCodeDraft(username, problemKey, 'java') ?? activeProblem?.starterCode?.java ?? '',
+    javascript: loadCodeDraft(username, problemKey, 'javascript') ?? activeProblem?.starterCode?.javascript ?? '',
+  }));
+
   const [customInput, setCustomInput] = useState<string>('');
   const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(true);
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
@@ -61,39 +97,89 @@ export const ProblemWorkspace: React.FC = () => {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const rightColumnRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Update starter code when active problem changes
+  // Restore saved language and code drafts when problem or user changes
   useEffect(() => {
+    if (!problemKey || !activeProblem) return;
+
+    const savedLang = loadLanguagePref(username, problemKey);
+    const resolvedLang: SupportedLanguage = (savedLang && ['cpp', 'python', 'java', 'javascript'].includes(savedLang))
+      ? (savedLang as SupportedLanguage)
+      : 'cpp';
+    setLanguage(resolvedLang);
+
     setCodeMap({
-      cpp: activeProblem.starterCode.cpp,
-      python: activeProblem.starterCode.python,
-      java: activeProblem.starterCode.java,
-      javascript: activeProblem.starterCode.javascript,
+      cpp: loadCodeDraft(username, problemKey, 'cpp') ?? activeProblem.starterCode?.cpp ?? '',
+      python: loadCodeDraft(username, problemKey, 'python') ?? activeProblem.starterCode?.python ?? '',
+      java: loadCodeDraft(username, problemKey, 'java') ?? activeProblem.starterCode?.java ?? '',
+      javascript: loadCodeDraft(username, problemKey, 'javascript') ?? activeProblem.starterCode?.javascript ?? '',
     });
     setCustomInput('');
-  }, [activeProblem.id]);
+  }, [activeProblem?.id, problemKey, username]);
 
-  const currentCode = codeMap[language];
+  // Clean up debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const currentCode = codeMap[language] ?? '';
 
   const handleCodeChange = (newCode: string) => {
     setCodeMap(prev => ({ ...prev, [language]: newCode }));
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      if (problemKey) {
+        saveCodeDraft(username, problemKey, language, newCode);
+      }
+    }, 800);
+  };
+
+  const handleLanguageChange = (newLang: SupportedLanguage) => {
+    setLanguage(newLang);
+    if (problemKey) {
+      saveLanguagePref(username, problemKey, newLang);
+      const savedDraft = loadCodeDraft(username, problemKey, newLang);
+      if (savedDraft !== null) {
+        setCodeMap(prev => ({ ...prev, [newLang]: savedDraft }));
+      } else if (!codeMap[newLang] && activeProblem?.starterCode?.[newLang]) {
+        setCodeMap(prev => ({ ...prev, [newLang]: activeProblem.starterCode[newLang] }));
+      }
+    }
   };
 
   const handleResetCode = () => {
-    setCodeMap(prev => ({ ...prev, [language]: activeProblem.starterCode[language] }));
+    const defaultCode = activeProblem?.starterCode?.[language] || '';
+    setCodeMap(prev => ({ ...prev, [language]: defaultCode }));
+    if (problemKey) {
+      saveCodeDraft(username, problemKey, language, defaultCode);
+    }
   };
 
   const handleSelectSubmissionCode = (code: string, subLang: string) => {
     if (['cpp', 'python', 'java', 'javascript'].includes(subLang)) {
-      setLanguage(subLang as SupportedLanguage);
-      setCodeMap(prev => ({ ...prev, [subLang]: code }));
+      const selectedLang = subLang as SupportedLanguage;
+      setLanguage(selectedLang);
+      if (problemKey) {
+        saveLanguagePref(username, problemKey, selectedLang);
+        saveCodeDraft(username, problemKey, selectedLang, code);
+      }
+      setCodeMap(prev => ({ ...prev, [selectedLang]: code }));
       setMobileTab('editor');
     }
   };
 
   // Run Code handler
   const handleRun = useCallback(() => {
-    if (isRunningCode || isSubmitting) return;
+    if (isRunningCode || isSubmitting || !activeProblem) return;
     setIsConsoleOpen(true);
     setMobileTab('editor');
     runCode(activeProblem, language, currentCode, customInput);
@@ -101,7 +187,7 @@ export const ProblemWorkspace: React.FC = () => {
 
   // Submit Solution handler
   const handleSubmit = useCallback(() => {
-    if (isRunningCode || isSubmitting) return;
+    if (isRunningCode || isSubmitting || !activeProblem) return;
     setIsConsoleOpen(true);
     setMobileTab('editor');
     submitSolution(activeProblem, language, currentCode);
@@ -187,30 +273,38 @@ export const ProblemWorkspace: React.FC = () => {
     };
   }, [isDraggingV]);
 
+  if (!activeProblem) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[var(--obsidian)] text-[var(--bone)] font-mono text-sm">
+        Loading problem workspace...
+      </div>
+    );
+  }
+
   const currentIndex = problems.findIndex(p => p.id === activeProblem.id);
   const prevProblem = currentIndex > 0 ? problems[currentIndex - 1] : null;
   const nextProblem = currentIndex < problems.length - 1 ? problems[currentIndex + 1] : null;
 
   return (
-    <div className={`flex flex-col ${isFullscreen ? 'fixed inset-0 z-50' : 'h-screen'} bg-[var(--bg-canvas)] text-[var(--text-1)] overflow-hidden select-none font-sans relative`}>
+    <div className={`flex flex-col ${isFullscreen ? 'fixed inset-0 z-50' : 'h-screen'} bg-[var(--obsidian)] text-[var(--bone)] overflow-hidden select-none font-sans relative`}>
       
-      {/* 36px Minimal Workspace Topbar */}
-      <div className="h-[36px] border-b border-[var(--border)] bg-[var(--bg-canvas)] px-3 flex items-center justify-between shrink-0 text-[13px] z-20">
+      {/* 38px Minimal Immersive Topbar */}
+      <div className="h-[38px] border-b border-[var(--border)] bg-[var(--carbon)] px-3.5 flex items-center justify-between shrink-0 text-xs z-20 font-mono">
         {/* Left Section: Back, Problem Title, Difficulty & Bookmark */}
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigateToPage('problems')}
-            className="text-[var(--text-2)] hover:text-[var(--text-1)] text-[16px] p-1 rounded transition-colors flex items-center"
-            title="Back to Problems"
+            onClick={() => navigate('/problems')}
+            className="text-[var(--text-3)] hover:text-[var(--bone)] p-1 rounded transition-colors flex items-center cursor-pointer"
+            title="Back to Problems Catalog"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-3.5 h-3.5" />
           </button>
 
           <div className="flex items-center gap-2">
-            <span className="font-medium text-[var(--text-1)] text-[13px] truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+            <span className="font-semibold text-[var(--bone)] font-sans text-xs truncate max-w-[200px] sm:max-w-xs md:max-w-md">
               {activeProblem.title}
             </span>
-            <DifficultyBadge difficulty={activeProblem.difficulty} />
+            <DifficultyBadge difficulty={activeProblem.difficulty} size="sm" />
           </div>
 
           <button
@@ -225,38 +319,38 @@ export const ProblemWorkspace: React.FC = () => {
         </div>
 
         {/* Center: Mobile Switcher Tabs */}
-        <div className="flex lg:hidden items-center bg-[var(--bg-elevated)] p-0.5 rounded-[var(--r-md)] border border-[var(--border)]">
+        <div className="flex lg:hidden items-center bg-[var(--ash)] p-0.5 rounded-[var(--r-sm)] border border-[var(--border)]">
           <button
             onClick={() => setMobileTab('desc')}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[12px] font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
               mobileTab === 'desc'
-                ? 'bg-[var(--bg-card)] text-[var(--text-1)] shadow-sm'
-                : 'text-[var(--text-2)]'
+                ? 'bg-[var(--carbon)] text-[var(--bone)]'
+                : 'text-[var(--text-3)]'
             }`}
           >
-            <FileText className="w-3.5 h-3.5" />
+            <FileText className="w-3 h-3" />
             <span>Problem</span>
           </button>
           <button
             onClick={() => setMobileTab('editor')}
-            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[12px] font-medium transition-colors ${
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-medium transition-colors ${
               mobileTab === 'editor'
-                ? 'bg-[var(--bg-card)] text-[var(--text-1)] shadow-sm'
-                : 'text-[var(--text-2)]'
+                ? 'bg-[var(--carbon)] text-[var(--bone)]'
+                : 'text-[var(--text-3)]'
             }`}
           >
-            <Code2 className="w-3.5 h-3.5" />
+            <Code2 className="w-3 h-3" />
             <span>Code</span>
           </button>
         </div>
 
         {/* Right Section: Prev/Next & Quick Tools */}
-        <div className="flex items-center gap-1.5 text-[var(--text-2)] text-[14px]">
+        <div className="flex items-center gap-1 text-[var(--text-3)]">
           
           {/* Keyboard Shortcuts Trigger */}
           <button
             onClick={() => setShowShortcutsModal(true)}
-            className="p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
+            className="p-1 rounded hover:text-[var(--bone)] hover:bg-[var(--ash)] transition-colors"
             title="Keyboard Shortcuts"
           >
             <Keyboard className="w-3.5 h-3.5" />
@@ -265,7 +359,7 @@ export const ProblemWorkspace: React.FC = () => {
           {/* Reset Panel Splits */}
           <button
             onClick={() => { setHorizontalSplit(48); setVerticalSplit(62); }}
-            className="hidden lg:flex p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
+            className="hidden lg:flex p-1 rounded hover:text-[var(--bone)] hover:bg-[var(--ash)] transition-colors"
             title="Reset split layout"
           >
             <Columns className="w-3.5 h-3.5" />
@@ -274,27 +368,27 @@ export const ProblemWorkspace: React.FC = () => {
           {/* Fullscreen Toggle */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="hidden sm:flex p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] transition-colors"
+            className="hidden sm:flex p-1 rounded hover:text-[var(--bone)] hover:bg-[var(--ash)] transition-colors"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Workspace'}
           >
             {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
           </button>
 
-          <div className="h-3.5 w-px bg-[var(--border)] mx-1" />
+          <div className="h-3 w-px bg-[var(--border)] mx-1" />
 
           {/* Previous / Next Stepper */}
           <button
             disabled={!prevProblem}
-            onClick={() => prevProblem && navigateToProblem(prevProblem.id)}
-            className="p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            onClick={() => prevProblem && navigate(`/problems/${prevProblem.slug || prevProblem.id}`)}
+            className="p-1 rounded hover:text-[var(--bone)] hover:bg-[var(--ash)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
             title={prevProblem ? `Previous: ${prevProblem.title}` : undefined}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <button
             disabled={!nextProblem}
-            onClick={() => nextProblem && navigateToProblem(nextProblem.id)}
-            className="p-1 rounded hover:text-[var(--text-1)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            onClick={() => nextProblem && navigate(`/problems/${nextProblem.slug || nextProblem.id}`)}
+            className="p-1 rounded hover:text-[var(--bone)] hover:bg-[var(--ash)] disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
             title={nextProblem ? `Next: ${nextProblem.title}` : undefined}
           >
             <ChevronRight className="w-4 h-4" />
@@ -305,12 +399,12 @@ export const ProblemWorkspace: React.FC = () => {
       {/* Main Workspace Layout with Dual-Axis Resizing */}
       <div 
         ref={containerRef}
-        className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden bg-[var(--bg-canvas)] p-1 gap-1"
+        className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden bg-[var(--obsidian)] p-1.5 gap-1.5"
       >
-        {/* Left Panel: Problem Statement / Submissions / Editorial / Help */}
+        {/* Left Panel: Problem Statement / Submissions / Solution */}
         <div 
           style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${horizontalSplit}%` : '100%' }}
-          className={`h-full min-h-0 overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-card)] ${
+          className={`h-full min-h-0 overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--carbon)] ${
             mobileTab === 'desc' ? 'flex flex-col flex-1 lg:flex-none' : 'hidden lg:flex lg:flex-col'
           }`}
         >
@@ -326,31 +420,25 @@ export const ProblemWorkspace: React.FC = () => {
           onMouseDown={(e) => { e.preventDefault(); setIsDraggingH(true); }}
           onDoubleClick={() => setHorizontalSplit(50)}
           title="Drag to resize panels"
-          className="hidden lg:flex w-1.5 bg-transparent hover:bg-[var(--accent-dim)] active:bg-[var(--accent-dim)] cursor-col-resize items-center justify-center transition-colors group shrink-0 relative z-20 rounded"
-        >
-          <div className="flex flex-col gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
-            <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
-            <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
-          </div>
-        </div>
+          className="hidden lg:flex w-1 bg-transparent hover:bg-[var(--verdigris)] active:bg-[var(--verdigris)] cursor-col-resize items-center justify-center transition-colors group shrink-0 relative z-20 rounded"
+        />
 
         {/* Right Panel: Editor (Top) & Testcase/Console (Bottom) */}
         <div 
           ref={rightColumnRef}
           style={{ width: typeof window !== 'undefined' && window.innerWidth >= 1024 ? `${100 - horizontalSplit}%` : '100%' }}
-          className={`h-full min-h-0 flex flex-col overflow-hidden gap-1 ${
+          className={`h-full min-h-0 flex flex-col overflow-hidden gap-1.5 ${
             mobileTab === 'editor' ? 'flex flex-1 lg:flex-none' : 'hidden lg:flex'
           }`}
         >
           {/* Top Half: Code Editor */}
           <div 
             style={{ height: isConsoleOpen ? `${verticalSplit}%` : '100%' }}
-            className="min-h-0 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-card)] transition-[height] duration-75"
+            className="min-h-0 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--carbon)] transition-[height] duration-75"
           >
             <MonacoCodeEditor
               language={language}
-              onLanguageChange={setLanguage}
+              onLanguageChange={handleLanguageChange}
               code={currentCode}
               onCodeChange={handleCodeChange}
               onResetCode={handleResetCode}
@@ -363,21 +451,15 @@ export const ProblemWorkspace: React.FC = () => {
               onMouseDown={(e) => { e.preventDefault(); setIsDraggingV(true); }}
               onDoubleClick={() => setVerticalSplit(60)}
               title="Drag to resize console"
-              className="h-1.5 bg-transparent hover:bg-[var(--accent-dim)] active:bg-[var(--accent-dim)] cursor-row-resize flex items-center justify-center transition-colors group shrink-0 relative z-20 rounded"
-            >
-              <div className="flex gap-1 items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
-                <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
-                <span className="w-1 h-1 rounded-full bg-[var(--text-3)]" />
-              </div>
-            </div>
+              className="h-1 bg-transparent hover:bg-[var(--verdigris)] active:bg-[var(--verdigris)] cursor-row-resize flex items-center justify-center transition-colors group shrink-0 relative z-20 rounded"
+            />
           )}
 
           {/* Bottom Half: Test Cases / Custom Input / Verdict Console */}
           {isConsoleOpen && (
             <div 
               style={{ height: `${100 - verticalSplit}%` }}
-              className="min-h-0 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-card)] transition-[height] duration-75"
+              className="min-h-0 flex flex-col overflow-hidden rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--carbon)] transition-[height] duration-75"
             >
               <ConsoleRunner
                 problem={activeProblem}
@@ -409,39 +491,39 @@ export const ProblemWorkspace: React.FC = () => {
 
       {/* Shortcuts Modal Dialog */}
       {showShortcutsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-[var(--r-xl)] bg-[var(--bg-elevated)] border border-[var(--border-mid)] p-5 shadow-[var(--shadow-lg)] space-y-4 page-fade">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-[var(--r-lg)] bg-[var(--ash)] border border-[var(--border-strong)] p-5 shadow-[var(--shadow-lg)] space-y-4 page-fade">
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
               <div className="flex items-center gap-2">
-                <Keyboard className="w-4 h-4 text-[var(--accent)]" />
-                <h3 className="font-semibold text-[var(--text-1)] text-[14px]">Keyboard Shortcuts</h3>
+                <Keyboard className="w-4 h-4 text-[var(--verdigris)]" />
+                <h3 className="font-semibold text-[var(--bone)] text-xs font-mono uppercase tracking-wider">Keyboard Shortcuts</h3>
               </div>
               <button 
                 onClick={() => setShowShortcutsModal(false)}
-                className="p-1 rounded text-[var(--text-3)] hover:text-[var(--text-1)]"
+                className="p-1 rounded text-[var(--text-3)] hover:text-[var(--bone)]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="space-y-2 text-[12px]">
+            <div className="space-y-2 text-xs font-mono">
               <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--text-2)]">Run Code</span>
-                <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] font-mono text-[var(--text-1)]">Ctrl / ⌘ + Enter</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--bone)]">Ctrl / ⌘ + Enter</kbd>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--text-2)]">Submit Solution</span>
-                <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] font-mono text-[var(--text-1)]">Ctrl / ⌘ + Shift + Enter</kbd>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--verdigris)]">Ctrl / ⌘ + Shift + Enter</kbd>
               </div>
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-[var(--text-2)]">Search / Command Palette</span>
-                <kbd className="px-2 py-0.5 rounded bg-[var(--bg-card)] border border-[var(--border)] font-mono text-[var(--text-1)]">Ctrl / ⌘ + K</kbd>
+                <span className="text-[var(--text-2)]">Command Palette</span>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--bone)]">Ctrl / ⌘ + K</kbd>
               </div>
             </div>
 
             <button
               onClick={() => setShowShortcutsModal(false)}
-              className="btn-secondary w-full justify-center !py-1.5 !text-[12px]"
+              className="btn-secondary w-full justify-center !py-1.5 !text-xs"
             >
               Close
             </button>
@@ -452,5 +534,3 @@ export const ProblemWorkspace: React.FC = () => {
     </div>
   );
 };
-
-

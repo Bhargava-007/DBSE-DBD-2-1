@@ -23,6 +23,7 @@ export interface IContest extends Document {
   registeredUserIds: Types.ObjectId[];
   createdBy?: Types.ObjectId;
   status: ContestStatus;
+  scoringMode?: string;
   bannerBadge?: string;
   finalRankings: IFinalRanking[];
   createdAt: Date;
@@ -53,6 +54,7 @@ const ContestSchema = new Schema<IContest>(
     registeredUserIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
     status: { type: String, enum: ['upcoming', 'live', 'ended'], default: 'upcoming', index: true },
+    scoringMode: { type: String, default: 'ICPC' },
     bannerBadge: { type: String, default: 'Rated' },
     finalRankings: [FinalRankingSchema],
   },

@@ -18,12 +18,14 @@ export const normalizeContest = (raw: any): Contest => {
     id: raw._id ? raw._id.toString() : raw.id || '',
     title: raw.title || '',
     slug: raw.slug || '',
+    description: raw.description || '',
     startTime: raw.startTime ? new Date(raw.startTime).toISOString() : new Date().toISOString(),
     endTime: raw.endTime ? new Date(raw.endTime).toISOString() : new Date().toISOString(),
     durationMinutes: raw.durationMinutes ?? 90,
     status,
     participantCount: raw.registeredUserIds ? raw.registeredUserIds.length : (raw.participantCount ?? 0),
     problemIds,
+    scoringMode: raw.scoringMode,
     bannerBadge: raw.bannerBadge || (status === 'Live' ? 'LIVE NOW • Division 1' : 'Rated (Div. 1 + Div. 2)'),
   };
 };
@@ -97,14 +99,23 @@ export const getLeaderboard = async (
 };
 
 /**
- * Fetch calling user's current live standing
+ * Payload for creating a new contest
  */
-export const getMyRank = async (contestId: string): Promise<{
-  rank: number | null;
-  score: number | null;
-  solvedCount: number;
-  penaltyMinutes: number;
-}> => {
-  const response = await apiClient.get(`/contests/${contestId}/my-rank`);
-  return response.data.data;
+export interface CreateContestPayload {
+  title: string;
+  slug?: string;
+  description?: string;
+  startTime: string; // ISO datetime string
+  endTime: string;   // ISO datetime string
+  durationMinutes: number;
+  problemIds: string[];
+  bannerBadge?: string;
+}
+
+/**
+ * Create a new contest tournament (Admin/Setter only)
+ */
+export const createContest = async (payload: CreateContestPayload): Promise<Contest> => {
+  const response = await apiClient.post('/contests', payload);
+  return normalizeContest(response.data.data);
 };

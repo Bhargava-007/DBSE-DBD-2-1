@@ -8,6 +8,8 @@ export interface AuthenticatedSocket extends Socket {
     user?: IUser;
     userId?: string;
     username?: string;
+    role?: string;
+    isGuest?: boolean;
   };
 }
 
@@ -41,10 +43,16 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
         socket.handshake.auth?.token ||
         socket.handshake.headers?.authorization?.replace('Bearer ', '');
 
+      // If no token is provided, the socket connects as a guest (read-only, no auth error)
       if (!token) {
-        return next(new Error('Authentication error: Missing authentication token.'));
+        socket.data = {
+          username: 'Guest',
+          isGuest: true,
+        };
+        return next();
       }
 
+      // If a token is provided, verify it as before
       const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; username: string };
       const user = await User.findById(decoded.userId);
 
@@ -52,10 +60,13 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
         return next(new Error('Authentication error: User not found.'));
       }
 
+      // Attach socket.data.userId and socket.data.role only when token is valid
       socket.data = {
         user,
         userId: user._id.toString(),
         username: user.username,
+        role: user.role,
+        isGuest: false,
       };
 
       next();
@@ -66,13 +77,23 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
 
   // Connection Lifecycle
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`[Socket] Client connected: socketId=${socket.id}, user=${socket.data.username} (${socket.data.userId})`);
+    const displayName = socket.data.username || 'Guest';
+    const userTag = socket.data.userId ? `(${socket.data.userId})` : '[guest]';
+    console.log(`[Socket] Client connected: socketId=${socket.id}, user=${displayName} ${userTag}`);
+
+    // Guest sockets cannot emit scoring events
+    socket.use(([event], next) => {
+      if ((!socket.data.userId || socket.data.isGuest) && /score|scoring/i.test(event)) {
+        return next(new Error('Unauthorized: Guest sockets cannot emit scoring events.'));
+      }
+      next();
+    });
 
     // Contest Room Join
     socket.on('join:contest', (contestId: string) => {
       const room = `contest:${contestId}`;
       socket.join(room);
-      console.log(`[Socket] User ${socket.data.username} joined room: ${room}`);
+      console.log(`[Socket] User ${displayName} joined room: ${room}`);
       socket.emit('joined:contest', { contestId, room });
     });
 
@@ -80,7 +101,7 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
     socket.on('leave:contest', (contestId: string) => {
       const room = `contest:${contestId}`;
       socket.leave(room);
-      console.log(`[Socket] User ${socket.data.username} left room: ${room}`);
+      console.log(`[Socket] User ${displayName} left room: ${room}`);
       socket.emit('left:contest', { contestId, room });
     });
 

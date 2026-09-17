@@ -312,6 +312,20 @@ export class DockerSandbox {
    */
   public async runLocally(params: SandboxExecutionParams): Promise<SandboxExecutionResult> {
     const { language, code, input, timeLimitMs } = params;
+
+    if (language === 'cpp' || language === 'java') {
+      return {
+        stdout: '',
+        stderr: `Docker is required to run ${language === 'cpp' ? 'C++' : 'Java'} submissions. Please ensure Docker Desktop is running and restart the judge worker.`,
+        exitCode: 1,
+        timedOut: false,
+        memoryExceeded: false,
+        compilationError: `Docker is offline. ${language === 'cpp' ? 'C++ (g++)' : 'Java (javac)'} is not available on the host. Start Docker Desktop and retry.`,
+        executionTimeMs: 0,
+        memoryKb: 0,
+      };
+    }
+
     const langConfig = LANGUAGE_CONFIGS[language];
     const adjustedTimeoutMs = Math.round(timeLimitMs * (langConfig?.timeoutMultiplier || 1.5));
 
@@ -324,65 +338,14 @@ export class DockerSandbox {
     const startTime = Date.now();
 
     try {
-      // 1. Compilation Step (for compiled languages like C++ and Java)
-      if (language === 'cpp') {
-        const outExe = path.join(tmpDir, isWindows ? 'solution.exe' : 'solution');
-        const compile = spawnSync('g++', ['-O2', '-std=c++17', srcFile, '-o', outExe], {
-          cwd: tmpDir,
-          encoding: 'utf-8',
-          timeout: 15000,
-          shell: isWindows,
-        });
-
-        if (compile.error || compile.status !== 0) {
-          const errMsg = compile.stderr || compile.stdout || compile.error?.message || 'C++ compilation failed.';
-          return {
-            stdout: '',
-            stderr: errMsg,
-            exitCode: compile.status || 1,
-            timedOut: false,
-            memoryExceeded: false,
-            compilationError: `g++ error: ${errMsg}`,
-            executionTimeMs: Date.now() - startTime,
-            memoryKb: 0,
-          };
-        }
-      } else if (language === 'java') {
-        const compile = spawnSync('javac', [srcFile], {
-          cwd: tmpDir,
-          encoding: 'utf-8',
-          timeout: 15000,
-          shell: isWindows,
-        });
-
-        if (compile.error || compile.status !== 0) {
-          const errMsg = compile.stderr || compile.stdout || compile.error?.message || 'Java compilation failed.';
-          return {
-            stdout: '',
-            stderr: errMsg,
-            exitCode: compile.status || 1,
-            timedOut: false,
-            memoryExceeded: false,
-            compilationError: `javac error: ${errMsg}`,
-            executionTimeMs: Date.now() - startTime,
-            memoryKb: 0,
-          };
-        }
-      }
-
-      // 2. Execution Step
+      // Execution Step (Python and JavaScript on host)
       let executable = '';
       let execArgs: string[] = [];
 
-      if (language === 'cpp') {
-        executable = path.join(tmpDir, isWindows ? 'solution.exe' : 'solution');
-      } else if (language === 'java') {
-        executable = 'java';
-        execArgs = ['-cp', tmpDir, 'Solution'];
-      } else if (language === 'python') {
+      if ((language as SupportedLanguage) === 'python') {
         executable = isWindows ? 'python' : 'python3';
         execArgs = [srcFile];
-      } else if (language === 'javascript') {
+      } else {
         executable = 'node';
         execArgs = [srcFile];
       }

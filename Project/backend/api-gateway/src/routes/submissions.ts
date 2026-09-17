@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { Submission, ISubmission } from '../models/Submission';
 import { Problem } from '../models/Problem';
@@ -8,6 +9,18 @@ import { validate } from '../middleware/validate';
 import { enqueueSubmission } from '../queue/submissionQueue';
 
 const router = Router();
+
+// Rate limiter for code submissions: max 10 requests per minute per IP
+const submissionLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // Limit each IP to 10 submissions per windowMs
+  standardHeaders: true, // Return standard rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable `X-RateLimit-*` headers
+  message: {
+    success: false,
+    error: 'Too many submissions. Maximum 10 requests per minute allowed.',
+  },
+});
 
 // Validation Schemas
 const createSubmissionSchema = z.object({
@@ -41,6 +54,7 @@ const listSubmissionsQuerySchema = z.object({
  */
 router.post(
   '/',
+  submissionLimiter,
   authenticate,
   validate(createSubmissionSchema),
   async (req: AuthRequest, res: Response): Promise<void> => {

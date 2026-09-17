@@ -1,5 +1,6 @@
 import React from 'react';
-import { JudgeProvider, useJudge } from './context/JudgeContext';
+import { Routes, Route, useLocation } from 'react-router-dom';
+import { JudgeProvider } from './context/JudgeContext';
 import { Navbar } from './components/layout/Navbar';
 import { CommandPalette } from './components/layout/CommandPalette';
 import { AuthModal } from './components/auth/AuthModal';
@@ -10,32 +11,18 @@ import { UserDashboard } from './components/dashboard/UserDashboard';
 import { ContestsView } from './components/contests/ContestsView';
 import { LeaderboardView } from './components/contests/LeaderboardView';
 import { SubmissionsView } from './components/submissions/SubmissionsView';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { NotFoundPage } from './pages/NotFoundPage';
+import { AdminPage } from './pages/AdminPage';
+import { CreateProblemPage } from './pages/CreateProblemPage';
+import { CreateContestPage } from './pages/CreateContestPage';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Code2, ShieldCheck } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { activePage } = useJudge();
-
-  const renderActiveView = () => {
-    switch (activePage) {
-      case 'home':
-        return <HomePage />;
-      case 'problem-detail':
-        return <ProblemWorkspace />;
-      case 'dashboard':
-        return <UserDashboard />;
-      case 'contests':
-        return <ContestsView />;
-      case 'leaderboard':
-        return <LeaderboardView />;
-      case 'submissions':
-        return <SubmissionsView />;
-      case 'problems':
-      default:
-        return <ProblemCatalog />;
-    }
-  };
-
-  const isWorkspace = activePage === 'problem-detail';
+  const location = useLocation();
+  const isWorkspace = /^\/problems\/[^/]+$/.test(location.pathname);
 
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-1)] selection:bg-[var(--accent-dim)] selection:text-[var(--text-1)] transition-colors duration-150 font-sans">
@@ -44,7 +31,57 @@ const MainContent: React.FC = () => {
 
       {/* Main Content View */}
       <main className="flex-1 flex flex-col">
-        {renderActiveView()}
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/problems" element={<ProblemCatalog />} />
+          <Route path="/problems/:slug" element={<ProblemWorkspace />} />
+          <Route path="/contests" element={<ContestsView />} />
+          <Route path="/contests/:id" element={<LeaderboardView />} />
+          <Route path="/leaderboard" element={<LeaderboardView />} />
+          <Route 
+            path="/dashboard" 
+            element={
+              <ProtectedRoute>
+                <UserDashboard />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/submissions" 
+            element={
+              <ProtectedRoute>
+                <SubmissionsView />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route 
+            path="/admin" 
+            element={
+              <ProtectedRoute allowedRoles={['admin', 'setter']}>
+                <AdminPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/problems/new" 
+            element={
+              <ProtectedRoute roles={['admin', 'setter']}>
+                <CreateProblemPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/contests/new" 
+            element={
+              <ProtectedRoute roles={['admin', 'setter']}>
+                <CreateContestPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </main>
 
       {/* Editorial footer (hidden in problem workspace to give maximum code editor space) */}
@@ -94,4 +131,3 @@ export function App() {
 }
 
 export default App;
-

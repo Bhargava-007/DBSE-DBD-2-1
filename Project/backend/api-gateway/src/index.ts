@@ -5,7 +5,8 @@ dotenv.config();
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { connectDB } from './config/db';
+import mongoose from 'mongoose';
+import { connectDB, disconnectDB } from './config/db';
 import { connectRedis, redisClient } from './config/redis';
 
 // Route Imports
@@ -13,6 +14,8 @@ import authRoutes from './routes/auth';
 import problemsRoutes from './routes/problems';
 import submissionsRoutes from './routes/submissions';
 import contestsRoutes from './routes/contests';
+import adminRoutes from './routes/admin';
+import plagiarismRoutes from './routes/plagiarism';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -51,16 +54,26 @@ const globalLimiter = rateLimit({
 app.use('/api/', globalLimiter);
 
 // 3. Health & System Telemetry Endpoint
-app.get('/health', async (_req: Request, res: Response) => {
-  const isRedisActive = redisClient.status === 'ready' || redisClient.status === 'connect';
+const healthHandler = async (_req: Request, res: Response) => {
+  const isMongoOnline = mongoose.connection.readyState === 1;
+  const isRedisOnline = redisClient.status === 'ready' || redisClient.status === 'connect';
+
   res.status(200).json({
-    success: true,
-    service: 'AlgoFlow API Gateway',
+    service: 'api-gateway',
+    status: 'ok',
+    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
-    status: 'online',
-    redis: isRedisActive ? 'connected' : 'disconnected/standby',
+    mongodb: isMongoOnline ? 'connected' : 'disconnected',
+    redis: isRedisOnline ? 'connected' : 'disconnected',
+    connections: {
+      mongodb: isMongoOnline ? 'connected' : 'disconnected',
+      redis: isRedisOnline ? 'connected' : 'disconnected',
+    },
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 app.get('/api', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -71,6 +84,7 @@ app.get('/api', (_req: Request, res: Response) => {
       problems: '/api/problems',
       submissions: '/api/submissions',
       contests: '/api/contests',
+      admin: '/api/admin',
       health: '/health',
     },
   });
@@ -81,6 +95,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/problems', problemsRoutes);
 app.use('/api/submissions', submissionsRoutes);
 app.use('/api/contests', contestsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/plagiarism', plagiarismRoutes);
 
 // 5. 404 Handler
 app.use((req: Request, res: Response) => {
@@ -122,16 +138,48 @@ const startServer = async () => {
     });
 
     // Graceful Shutdown
-    const shutdown = () => {
-      console.log('\n[Server] Gracefully shutting down...');
-      server.close(() => {
-        console.log('[Server] HTTP server closed.');
+    let isShuttingDown = false;
+    const shutdown = async (signal: string) => {
+      if (isShuttingDown) return;
+      isShuttingDown = true;
+      console.log(`\n[API Gateway] Received ${signal}. Initiating graceful shutdown...`);
+
+      try {
+        // Step 1: Close HTTP server
+        await new Promise<void>((resolve) => {
+          server.close((err) => {
+            if (err) console.warn('[API Gateway] HTTP server close notice:', err.message);
+            console.log('[API Gateway] 1. HTTP server closed.');
+            resolve();
+          });
+        });
+
+        // Step 2: Disconnect MongoDB
+        try {
+          await disconnectDB();
+          console.log('[API Gateway] 2. MongoDB disconnected.');
+        } catch (dbErr: any) {
+          console.warn('[API Gateway] MongoDB disconnect notice:', dbErr.message);
+        }
+
+        // Step 3: Disconnect Redis
+        try {
+          await redisClient.quit();
+          console.log('[API Gateway] 3. Redis disconnected.');
+        } catch (redisErr: any) {
+          console.warn('[API Gateway] Redis disconnect notice:', redisErr.message);
+        }
+
+        console.log('[API Gateway] Graceful shutdown completed. Exiting code 0.');
         process.exit(0);
-      });
+      } catch (err: any) {
+        console.error('[API Gateway] Error during shutdown:', err);
+        process.exit(1);
+      }
     };
 
-    process.on('SIGINT', shutdown);
-    process.on('SIGTERM', shutdown);
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error) {
     console.error('[Server] Failed to initialize server:', error);
     process.exit(1);

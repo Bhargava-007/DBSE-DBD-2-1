@@ -14,6 +14,7 @@ export interface IContest extends Document {
   registeredUserIds: Types.ObjectId[];
   createdBy?: Types.ObjectId;
   status: ContestStatus;
+  scoringMode?: string;
   bannerBadge?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -75,6 +76,10 @@ const ContestSchema = new Schema<IContest>(
       default: 'upcoming',
       index: true,
     },
+    scoringMode: {
+      type: String,
+      default: 'ICPC',
+    },
     bannerBadge: {
       type: String,
       default: 'Rated',
@@ -96,5 +101,9 @@ ContestSchema.methods.updateStatusFromTime = function () {
     this.status = 'ended';
   }
 };
+
+// Compound & Performance Indexes
+ContestSchema.index({ status: 1, startTime: 1 });
+ContestSchema.index({ startTime: 1, endTime: 1 });
 
 export const Contest = mongoose.model<IContest>('Contest', ContestSchema);

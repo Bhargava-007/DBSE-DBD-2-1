@@ -101,4 +101,9 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
+// Performance Indexes for User Lookups & Leaderboards
+UserSchema.index({ username: 1 });
+UserSchema.index({ rating: -1 });
+UserSchema.index({ email: 1 });
+
 export const User = mongoose.model<IUser>('User', UserSchema);
