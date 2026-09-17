@@ -172,14 +172,18 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const loadSubmissions = useCallback(async (filters?: submissionsApi.SubmissionFilters) => {
     try {
-      const response = await submissionsApi.getSubmissions(filters);
-      if (response.submissions && response.submissions.length > 0) {
+      const activeFilters: submissionsApi.SubmissionFilters = {
+        ...(currentUser?.id ? { userId: currentUser.id } : {}),
+        ...filters,
+      };
+      const response = await submissionsApi.getSubmissions(activeFilters);
+      if (response.submissions) {
         setSubmissions(response.submissions);
       }
     } catch {
       console.warn('[JudgeContext] Backend submissions API unavailable. Retaining local history.');
     }
-  }, []);
+  }, [currentUser?.id]);
 
   const loadContests = useCallback(async () => {
     try {
@@ -198,12 +202,19 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadContests();
   }, [loadProblems, loadSubmissions, loadContests]);
 
+  const userSubmissions = React.useMemo(() => {
+    if (!currentUser) return submissions;
+    return submissions.filter(
+      s => s.userId === currentUser.id || s.username === currentUser.username
+    );
+  }, [submissions, currentUser]);
+
   // Active Problem Resolution
   const activeProblem = problems.find(p => p.id === activeProblemId) || problems[0] || {} as Problem;
 
   const isProblemSolved = (problemId: string): boolean => {
     return submissions.some(
-      s => s.problemId === problemId && s.verdict === 'Accepted' && s.userId === currentUser?.id
+      s => s.problemId === problemId && s.verdict === 'Accepted' && (s.userId === currentUser?.id || s.username === currentUser?.username)
     );
   };
 
@@ -533,7 +544,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         problems,
         contests,
         submissions,
-        userSubmissions: submissions,
+        userSubmissions,
         activeProblemId,
         setActiveProblemId,
         activeProblem,

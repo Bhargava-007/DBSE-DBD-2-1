@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import logger from '../logger';
 
 export const connectDB = async (): Promise<void> => {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/algoflow';
+  const mongoUri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/algoflow';
 
   try {
     mongoose.set('strictQuery', true);

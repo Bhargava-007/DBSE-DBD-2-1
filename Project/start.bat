@@ -1,35 +1,39 @@
 @echo off
-set "PATH=%APPDATA%\npm;C:\Program Files\Docker\Docker\resources\bin;%PATH%"
+setlocal
+set "PATH=%APPDATA%\npm;C:\Program Files\MongoDB\Server\8.3\bin;C:\Program Files\Memurai;%PATH%"
+
 echo ========================================================
 echo        Starting AlgoFlow Online Judge System
 echo ========================================================
 
-:: 1. Ensure MongoDB is running
-powershell -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 27017 -InformationLevel Quiet)) { Start-Process 'C:\Program Files\MongoDB\Server\8.3\bin\mongod.exe' -ArgumentList '--dbpath \"$env:LOCALAPPDATA\MongoDB\data\" --port 27017' -WindowStyle Hidden; Write-Host '[Database] MongoDB started on port 27017.' -ForegroundColor Green } else { Write-Host '[Database] MongoDB is active on port 27017.' -ForegroundColor Cyan }"
+:: 1. Ensure MongoDB data folder and mongod process
+set "MONGO_DATA=%LOCALAPPDATA%\MongoDB\data"
+if not exist "%MONGO_DATA%" mkdir "%MONGO_DATA%"
 
-:: 2. Ensure Redis is running
-powershell -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet)) { Write-Host '[Cache/Queue] Port 6379 inactive. Starting Redis container...' -ForegroundColor Yellow; docker compose up -d redis; Start-Sleep -Seconds 3; if (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet) { Write-Host '[Cache/Queue] Redis container started on port 6379.' -ForegroundColor Green } else { Write-Host '[Cache/Queue] Warning: Redis port 6379 could not be verified. Ensure Docker Desktop is running.' -ForegroundColor Red } } else { Write-Host '[Cache/Queue] Redis is active on port 6379.' -ForegroundColor Cyan }"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 27017 -InformationLevel Quiet -WarningAction SilentlyContinue)) { Start-Process 'C:\Program Files\MongoDB\Server\8.3\bin\mongod.exe' -ArgumentList '--dbpath', $env:LOCALAPPDATA\MongoDB\data, '--port', '27017' -WindowStyle Hidden; Start-Sleep -Seconds 2; Write-Host '[Database] MongoDB started on port 27017.' -ForegroundColor Green } else { Write-Host '[Database] MongoDB is active on port 27017.' -ForegroundColor Cyan }"
 
-timeout /t 2 >nul
+:: 2. Ensure Redis / Memurai is running
+powershell -NoProfile -ExecutionPolicy Bypass -Command "if (-not (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet -WarningAction SilentlyContinue)) { Get-Service *memurai* -ErrorAction SilentlyContinue | Start-Service -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1 }; if (Test-NetConnection -ComputerName 127.0.0.1 -Port 6379 -InformationLevel Quiet -WarningAction SilentlyContinue) { Write-Host '[Cache/Queue] Redis/Memurai is active on port 6379.' -ForegroundColor Green } else { Write-Host '[Cache/Queue] Notice: Port 6379 inactive. Services will operate in in-memory fallback mode.' -ForegroundColor Yellow }"
 
+echo.
 echo [1/5] Starting API Gateway on port 4000...
-start "API Gateway" cmd /k "cd backend\api-gateway && npm run dev"
-timeout /t 3
+start "AlgoFlow API Gateway" /D "%~dp0backend\api-gateway" cmd /k "npm run dev"
+ping 127.0.0.1 -n 2 >nul
 
 echo [2/5] Starting Contest Service on port 4001...
-start "Contest Service" cmd /k "cd backend\contest-service && npm run dev"
-timeout /t 3
+start "AlgoFlow Contest Service" /D "%~dp0backend\contest-service" cmd /k "npm run dev"
+ping 127.0.0.1 -n 2 >nul
 
 echo [3/5] Starting Judge Worker...
-start "Judge Worker" cmd /k "cd backend\judge-worker && npm run dev"
-timeout /t 3
+start "AlgoFlow Judge Worker" /D "%~dp0backend\judge-worker" cmd /k "npm run dev"
+ping 127.0.0.1 -n 2 >nul
 
 echo [4/5] Starting Plagiarism Service on port 4002...
-start "Plagiarism Service" cmd /k "cd backend\plagiarism-service && npm run dev"
-timeout /t 3
+start "AlgoFlow Plagiarism Service" /D "%~dp0backend\plagiarism-service" cmd /k "npm run dev"
+ping 127.0.0.1 -n 2 >nul
 
 echo [5/5] Starting React Frontend on port 5173...
-start "Frontend" cmd /k "npm run dev"
+start "AlgoFlow Frontend" /D "%~dp0" cmd /k "npm run dev"
 
 echo.
 echo ========================================================

@@ -85,23 +85,31 @@ function computeUnifiedDiff(oldText: string, newText: string): DiffLine[] {
 }
 
 export const SubmissionsView: React.FC = () => {
-  const { submissions, problems } = useJudge();
+  const { submissions, problems, currentUser } = useJudge();
   const navigate = useNavigate();
+  const [filterUser, setFilterUser] = useState<'me' | 'all'>('me');
   const [selectedVerdict, setSelectedVerdict] = useState<string>('All');
   const [selectedLang, setSelectedLang] = useState<string>('All');
   const [inspectSubmission, setInspectSubmission] = useState<Submission | null>(null);
   const [copied, setCopied] = useState(false);
+  const inspectRef = React.useRef<HTMLDivElement>(null);
   
   // Inspector view mode: 'side-by-side' (Code + Expected vs Actual) or 'diff' (Unified Code Diff)
   const [inspectorTab, setInspectorTab] = useState<'inspect' | 'diff'>('inspect');
   const [selectedTestCaseIdx, setSelectedTestCaseIdx] = useState<number>(0);
   const [selectedPrevSubId, setSelectedPrevSubId] = useState<string>('');
 
-  const filteredSubmissions = submissions.filter(s => {
-    const matchesVerdict = selectedVerdict === 'All' || s.verdict === selectedVerdict;
-    const matchesLang = selectedLang === 'All' || s.language === selectedLang;
-    return matchesVerdict && matchesLang;
-  });
+  const filteredSubmissions = useMemo(() => {
+    return submissions.filter(s => {
+      const matchesUser =
+        filterUser === 'all' || !currentUser
+          ? true
+          : s.userId === currentUser.id || s.username === currentUser.username;
+      const matchesVerdict = selectedVerdict === 'All' || s.verdict === selectedVerdict;
+      const matchesLang = selectedLang === 'All' || s.language === selectedLang;
+      return matchesUser && matchesVerdict && matchesLang;
+    });
+  }, [submissions, filterUser, currentUser, selectedVerdict, selectedLang]);
 
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -230,6 +238,9 @@ export const SubmissionsView: React.FC = () => {
     setInspectorTab('inspect');
     setSelectedTestCaseIdx(0);
     setSelectedPrevSubId('');
+    setTimeout(() => {
+      inspectRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }, []);
 
   return (
@@ -243,7 +254,7 @@ export const SubmissionsView: React.FC = () => {
               Execution Ledger
             </h1>
             <span className="text-xs font-mono text-[var(--text-3)] px-2 py-0.5 rounded bg-[var(--ash)] border border-[var(--border)]">
-              {submissions.length} recorded
+              {filteredSubmissions.length} shown / {submissions.length} total
             </span>
           </div>
           <p className="text-xs sm:text-sm text-[var(--text-2)]">
@@ -252,7 +263,32 @@ export const SubmissionsView: React.FC = () => {
         </div>
 
         {/* Quick filters */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {currentUser && (
+            <div className="flex items-center rounded-[var(--r-md)] bg-[var(--ash)] p-0.5 border border-[var(--border)]">
+              <button
+                onClick={() => setFilterUser('me')}
+                className={`px-3 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                  filterUser === 'me'
+                    ? 'bg-[var(--carbon)] text-[var(--bone)] font-semibold shadow-xs'
+                    : 'text-[var(--text-3)] hover:text-[var(--bone)]'
+                }`}
+              >
+                My Submissions
+              </button>
+              <button
+                onClick={() => setFilterUser('all')}
+                className={`px-3 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                  filterUser === 'all'
+                    ? 'bg-[var(--carbon)] text-[var(--bone)] font-semibold shadow-xs'
+                    : 'text-[var(--text-3)] hover:text-[var(--bone)]'
+                }`}
+              >
+                All Submissions
+              </button>
+            </div>
+          )}
+
           <select
             value={selectedVerdict}
             onChange={(e) => setSelectedVerdict(e.target.value)}
@@ -393,7 +429,7 @@ export const SubmissionsView: React.FC = () => {
 
       {/* Expanded Side-by-Side Panel & Diff Viewer */}
       {inspectSubmission && (
-        <div className="card bg-[var(--carbon)] border-[var(--border-strong)] p-6 space-y-5 page-fade shadow-xl">
+        <div ref={inspectRef} className="card bg-[var(--carbon)] border-[var(--border-strong)] p-6 space-y-5 page-fade shadow-xl">
           
           {/* Panel Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">

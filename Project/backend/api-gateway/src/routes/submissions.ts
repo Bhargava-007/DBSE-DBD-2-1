@@ -171,6 +171,7 @@ router.post(
  */
 router.get(
   '/',
+  optionalAuthenticate,
   validate(listSubmissionsQuerySchema, 'query'),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -181,8 +182,10 @@ router.get(
       if (problemId) {
         filter.problemId = problemId;
       }
-      if (userId) {
+      if (userId && userId !== 'all') {
         filter.userId = userId;
+      } else if (!userId && req.userId) {
+        filter.userId = req.userId;
       }
       if (contestId) {
         filter.contestId = contestId;

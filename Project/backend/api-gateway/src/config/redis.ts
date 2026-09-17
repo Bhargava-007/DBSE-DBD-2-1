@@ -13,12 +13,19 @@ export const redisClient = new Redis(redisUrl, {
   lazyConnect: true,
 });
 
+let lastLoggedError = 0;
+
 redisClient.on('connect', () => {
+  lastLoggedError = 0;
   logger.info('[Redis] Connected to Redis server successfully.');
 });
 
-redisClient.on('error', (err) => {
-  logger.warn({ err: err.message }, '[Redis] Redis error or server unreachable');
+redisClient.on('error', (err: any) => {
+  const now = Date.now();
+  if (now - lastLoggedError > 30000) {
+    lastLoggedError = now;
+    logger.warn({ err: err?.message || 'ECONNREFUSED' }, '[Redis] Redis server unreachable on port 6379. Background queue operations will retry automatically.');
+  }
 });
 
 export const connectRedis = async (): Promise<void> => {
@@ -27,6 +34,10 @@ export const connectRedis = async (): Promise<void> => {
       await redisClient.connect();
     }
   } catch (error: any) {
-    logger.warn({ err: error.message }, `[Redis] Note: Redis server at ${redisUrl} not currently active.`);
+    const now = Date.now();
+    if (now - lastLoggedError > 30000) {
+      lastLoggedError = now;
+      logger.warn({ err: error?.message || 'ECONNREFUSED' }, `[Redis] Note: Redis server at ${redisUrl} not currently active.`);
+    }
   }
 };

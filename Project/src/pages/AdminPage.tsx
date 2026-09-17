@@ -332,20 +332,10 @@ export const AdminPage: React.FC = () => {
           setSelectedContestId(list[0].id);
         }
       } else {
-        const defaultList: ContestOption[] = [
-          { id: 'cnt-411', title: 'Global CodeSprint 2026', participantCount: 1420 },
-          { id: 'cnt-412', title: 'AlgoFlow Biweekly Challenge #18', participantCount: 864 },
-        ];
-        setContestsList(defaultList);
-        if (!selectedContestId) setSelectedContestId('cnt-411');
+        setContestsList([]);
       }
     } catch {
-      const defaultList: ContestOption[] = [
-        { id: 'cnt-411', title: 'Global CodeSprint 2026', participantCount: 1420 },
-        { id: 'cnt-412', title: 'AlgoFlow Biweekly Challenge #18', participantCount: 864 },
-      ];
-      setContestsList(defaultList);
-      if (!selectedContestId) setSelectedContestId('cnt-411');
+      setContestsList([]);
     }
   }, [selectedContestId]);
 

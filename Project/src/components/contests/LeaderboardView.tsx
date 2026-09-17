@@ -24,8 +24,6 @@ interface ProblemColumn {
   slug?: string;
 }
 
-const FAKE_USERNAMES = new Set(['tourist', 'ecnerwala', 'benq', 'radewoosh', 'jiangly', 'petr', 'maroonrk']);
-
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   contestId = 'cnt-411',
   contestTitle = 'Global CodeSprint 2026',
@@ -61,13 +59,8 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
       const response = await getLeaderboard(activeContestId);
       const rawEntries = response.entries || [];
 
-      // Filter out fake mock accounts
-      const realEntries = rawEntries.filter(
-        entry => !FAKE_USERNAMES.has(entry.user.username.toLowerCase())
-      );
-
       // Sort ICPC Style: Solved desc, Penalty asc
-      const sorted = [...realEntries].sort((a, b) => {
+      const sorted = [...rawEntries].sort((a, b) => {
         const aSolved = a.solvedCount ?? Object.values(a.problemResults || {}).filter(p => p.solved).length;
         const bSolved = b.solvedCount ?? Object.values(b.problemResults || {}).filter(p => p.solved).length;
         if (bSolved !== aSolved) {

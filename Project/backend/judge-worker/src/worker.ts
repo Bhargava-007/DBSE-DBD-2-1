@@ -287,8 +287,13 @@ export const startJudgeWorker = (): Worker<SubmissionJobPayload> => {
     logger.error({ err }, `[Worker] Job ${job?.id} failed with error: ` + err.message);
   });
 
+  let lastWorkerErrorLog = 0;
   worker.on('error', (err) => {
-    logger.error({ err }, `[Worker] BullMQ worker emitted error: ` + err.message);
+    const now = Date.now();
+    if (now - lastWorkerErrorLog > 30000) {
+      lastWorkerErrorLog = now;
+      logger.warn({ err: err?.message || 'ECONNREFUSED' }, `[Worker] Redis unavailable for BullMQ queue. Retrying with backoff...`);
+    }
     scheduleWorkerRestart(err.message);
   });
 
