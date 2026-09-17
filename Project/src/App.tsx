@@ -16,6 +16,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { AdminPage } from './pages/AdminPage';
 import { CreateProblemPage } from './pages/CreateProblemPage';
+import { EditProblemPage } from './pages/EditProblemPage';
 import { CreateContestPage } from './pages/CreateContestPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Code2, ShieldCheck } from 'lucide-react';
@@ -69,6 +70,14 @@ const MainContent: React.FC = () => {
             element={
               <ProtectedRoute roles={['admin', 'setter']}>
                 <CreateProblemPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/admin/problems/:id/edit" 
+            element={
+              <ProtectedRoute roles={['admin', 'setter']}>
+                <EditProblemPage />
               </ProtectedRoute>
             } 
           />

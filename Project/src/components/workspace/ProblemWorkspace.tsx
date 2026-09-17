@@ -12,6 +12,7 @@ import { DescriptionPane } from './DescriptionPane';
 import { MonacoCodeEditor } from './MonacoCodeEditor';
 import { ConsoleRunner } from './ConsoleRunner';
 import { BottomActionBar } from './BottomActionBar';
+import { AlgorithmVisualizer } from './AlgorithmVisualizer';
 import { DifficultyBadge } from '../common/DifficultyBadge';
 import { 
   ArrowLeft,
@@ -25,6 +26,7 @@ import {
   Minimize2,
   Columns,
   Keyboard,
+  Sparkles,
   X
 } from 'lucide-react';
 
@@ -84,6 +86,7 @@ export const ProblemWorkspace: React.FC = () => {
   const [isBookmarked, setIsBookmarked] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
+  const [isVisualizerOpen, setIsVisualizerOpen] = useState<boolean>(false);
 
   // Responsive mobile tab ('desc' | 'editor')
   const [mobileTab, setMobileTab] = useState<'desc' | 'editor'>('desc');
@@ -193,10 +196,19 @@ export const ProblemWorkspace: React.FC = () => {
     submitSolution(activeProblem, language, currentCode);
   }, [isRunningCode, isSubmitting, submitSolution, activeProblem, language, currentCode]);
 
-  // Keyboard shortcuts (Cmd/Ctrl+Enter to Run, Cmd/Ctrl+Shift+Enter to Submit)
+  // Keyboard shortcuts (Cmd/Ctrl+Enter to Run, Cmd/Ctrl+Shift+Enter to Submit, V for Visualizer)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const activeEl = document.activeElement;
+      const isInputActive = 
+        activeEl && 
+        (activeEl.tagName === 'INPUT' || 
+         activeEl.tagName === 'TEXTAREA' || 
+         activeEl.getAttribute('contenteditable') === 'true' ||
+         activeEl.closest('.monaco-editor') !== null);
+
       const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
       if (isCmdOrCtrl && e.key === 'Enter') {
         e.preventDefault();
         if (e.shiftKey) {
@@ -204,12 +216,29 @@ export const ProblemWorkspace: React.FC = () => {
         } else {
           handleRun();
         }
+        return;
+      }
+
+      if (e.key === 'Escape') {
+        if (isVisualizerOpen) {
+          setIsVisualizerOpen(false);
+        }
+        if (showShortcutsModal) {
+          setShowShortcutsModal(false);
+        }
+        return;
+      }
+
+      // V or v key toggles the Algorithm Visualizer when not actively typing in code/input fields
+      if ((e.key === 'v' || e.key === 'V') && !isCmdOrCtrl && !e.altKey && !isInputActive) {
+        e.preventDefault();
+        setIsVisualizerOpen(prev => !prev);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun, handleSubmit]);
+  }, [handleRun, handleSubmit, isVisualizerOpen, showShortcutsModal]);
 
   // Horizontal Dragging (Left / Right resize)
   useEffect(() => {
@@ -345,8 +374,23 @@ export const ProblemWorkspace: React.FC = () => {
         </div>
 
         {/* Right Section: Prev/Next & Quick Tools */}
-        <div className="flex items-center gap-1 text-[var(--text-3)]">
+        <div className="flex items-center gap-1.5 text-[var(--text-3)]">
           
+          {/* Algorithm Visualizer Trigger Button */}
+          <button
+            onClick={() => setIsVisualizerOpen(!isVisualizerOpen)}
+            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors text-xs font-mono cursor-pointer ${
+              isVisualizerOpen 
+                ? 'bg-[var(--accent-dim)] text-[var(--verdigris)] border border-[var(--accent-border)] font-semibold' 
+                : 'hover:text-[var(--bone)] hover:bg-[var(--ash)] text-[var(--text-3)]'
+            }`}
+            title="Algorithm Visualizer (Press V)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[var(--verdigris)]" />
+            <span className="hidden sm:inline">Visualizer</span>
+            <kbd className="hidden md:inline-block px-1 py-0.2 rounded bg-[var(--obsidian)] text-[10px] text-[var(--text-3)] border border-[var(--border)]">V</kbd>
+          </button>
+
           {/* Keyboard Shortcuts Trigger */}
           <button
             onClick={() => setShowShortcutsModal(true)}
@@ -515,6 +559,10 @@ export const ProblemWorkspace: React.FC = () => {
                 <span className="text-[var(--text-2)]">Submit Solution</span>
                 <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--verdigris)]">Ctrl / ⌘ + Shift + Enter</kbd>
               </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
+                <span className="text-[var(--text-2)]">Algorithm Visualizer</span>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--verdigris)]">V</kbd>
+              </div>
               <div className="flex items-center justify-between py-1.5">
                 <span className="text-[var(--text-2)]">Command Palette</span>
                 <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--bone)]">Ctrl / ⌘ + K</kbd>
@@ -530,6 +578,13 @@ export const ProblemWorkspace: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Algorithm Visualizer Interactive Modal Panel */}
+      <AlgorithmVisualizer
+        problem={activeProblem}
+        isOpen={isVisualizerOpen}
+        onClose={() => setIsVisualizerOpen(false)}
+      />
 
     </div>
   );

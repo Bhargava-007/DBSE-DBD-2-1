@@ -327,6 +327,10 @@ export const DescriptionPane: React.FC<Props> = ({
                   <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] text-[var(--verdigris)] border border-[var(--border)]">Ctrl + Shift + Enter</kbd>
                 </div>
                 <div className="flex items-center justify-between p-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
+                  <span className="text-[var(--text-2)]">Algorithm Visualizer</span>
+                  <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] text-[var(--verdigris)] border border-[var(--border)]">V</kbd>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
                   <span className="text-[var(--text-2)]">Command Palette</span>
                   <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] text-[var(--bone)] border border-[var(--border)]">Ctrl + K</kbd>
                 </div>

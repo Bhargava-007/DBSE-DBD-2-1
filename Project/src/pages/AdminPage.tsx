@@ -14,7 +14,10 @@ import {
   Play, 
   Loader2,
   FileCode,
-  CheckCircle2
+  CheckCircle2,
+  Edit3,
+  ExternalLink,
+  Code2
 } from 'lucide-react';
 import { useJudge } from '../context/JudgeContext';
 
@@ -26,6 +29,21 @@ interface AdminStats {
   submissionCount: number;
   acceptedCount: number;
   acceptanceRate: number;
+}
+
+interface AdminProblem {
+  _id: string;
+  id?: string;
+  title: string;
+  slug: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  tags: string[];
+  submissionsCount?: number;
+  totalAccepted?: number;
+  isPublished?: boolean;
+  timeLimitMs?: number;
+  memoryLimitMb?: number;
+  createdAt?: string;
 }
 
 interface AdminUser {
@@ -87,7 +105,7 @@ interface ContestOption {
   participantCount?: number;
 }
 
-type Tab = 'overview' | 'users' | 'submissions' | 'plagiarism' | 'health';
+type Tab = 'overview' | 'problems' | 'users' | 'submissions' | 'plagiarism' | 'health';
 
 const VERDICT_COLOR: Record<string, string> = {
   Accepted: 'text-[var(--green)]',
@@ -104,6 +122,8 @@ export const AdminPage: React.FC = () => {
   const { currentUser } = useJudge();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [problems, setProblems] = useState<AdminProblem[]>([]);
+  const [problemSearch, setProblemSearch] = useState('');
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [userSearch, setUserSearch] = useState('');
   const [submissions, setSubmissions] = useState<RecentSubmission[]>([]);
@@ -134,6 +154,26 @@ export const AdminPage: React.FC = () => {
       if (json.success) setStats(json.data);
     } catch {
       setError('Failed to load stats.');
+    }
+  }, []);
+
+  const fetchProblems = useCallback(async (search = '') => {
+    setLoading(true);
+    try {
+      const url = search 
+        ? `${API}/problems?search=${encodeURIComponent(search)}&limit=100` 
+        : `${API}/problems?limit=100`;
+      const res = await fetch(url, { headers: authHeader() });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setProblems(json.data.problems || json.data);
+      } else {
+        setError(json.error || 'Failed to load problems.');
+      }
+    } catch {
+      setError('Failed to load problems catalog.');
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -284,6 +324,7 @@ export const AdminPage: React.FC = () => {
   }, [fetchStats]);
 
   useEffect(() => {
+    if (activeTab === 'problems') fetchProblems(problemSearch);
     if (activeTab === 'users') fetchUsers(userSearch);
     if (activeTab === 'submissions') fetchSubmissions();
     if (activeTab === 'plagiarism') {
@@ -297,6 +338,7 @@ export const AdminPage: React.FC = () => {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
+    { id: 'problems', label: 'Problems' },
     { id: 'users', label: 'Users' },
     { id: 'submissions', label: 'Live Feed' },
     { id: 'plagiarism', label: 'Plagiarism' },
@@ -357,6 +399,7 @@ export const AdminPage: React.FC = () => {
         <button
           onClick={() => {
             if (activeTab === 'overview') fetchStats();
+            if (activeTab === 'problems') fetchProblems(problemSearch);
             if (activeTab === 'users') fetchUsers(userSearch);
             if (activeTab === 'submissions') fetchSubmissions();
             if (activeTab === 'plagiarism') {
@@ -419,18 +462,27 @@ export const AdminPage: React.FC = () => {
       {/* 1. OVERVIEW */}
       {activeTab === 'overview' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link
-            to="/admin/problems/new"
-            className="card p-6 space-y-3 hover:border-[var(--border-strong)] transition-all block group bg-[var(--carbon)] border-[var(--border)]"
+          <div
+            className="card p-6 space-y-3 hover:border-[var(--border-strong)] transition-all cursor-pointer group bg-[var(--carbon)] border-[var(--border)]"
+            onClick={() => setActiveTab('problems')}
           >
-            <PlusCircle className="w-5 h-5 text-[var(--verdigris)]" />
+            <div className="flex items-center justify-between">
+              <Code2 className="w-5 h-5 text-[var(--verdigris)]" />
+              <Link
+                to="/admin/problems/new"
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs font-mono text-[var(--verdigris)] hover:underline flex items-center gap-1"
+              >
+                <PlusCircle className="w-3.5 h-3.5" /> New Problem
+              </Link>
+            </div>
             <h3 className="font-bold text-[var(--bone)] group-hover:text-[var(--verdigris)] transition-colors">
               Problem Management
             </h3>
             <p className="text-xs sm:text-sm text-[var(--text-2)] leading-relaxed">
-              Author new problems, define test cases, configure memory and execution limits, and publish directly to the live catalog.
+              Browse, author, edit problem statements, configure test cases, and manage execution constraints.
             </p>
-          </Link>
+          </div>
 
           <Link
             to="/admin/contests/new"
@@ -473,6 +525,116 @@ export const AdminPage: React.FC = () => {
               <p className="text-xs sm:text-sm text-[var(--text-2)] leading-relaxed">{card.desc}</p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* 2. PROBLEMS */}
+      {activeTab === 'problems' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="relative max-w-sm flex-1">
+              <Search className="w-4 h-4 text-[var(--text-3)] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search problem by title or tag..."
+                value={problemSearch}
+                onChange={e => setProblemSearch(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && fetchProblems(problemSearch)}
+                className="w-full h-9 bg-[var(--ash)] border border-[var(--border)] focus:border-[var(--verdigris)] rounded-[var(--r-md)] pl-9 pr-3 text-xs font-mono text-[var(--bone)] placeholder-[var(--text-3)] focus:outline-none transition-colors"
+              />
+            </div>
+            <Link
+              to="/admin/problems/new"
+              className="btn-primary !bg-[var(--verdigris)] !text-[var(--obsidian)] !font-semibold text-xs font-mono flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              Create Problem
+            </Link>
+          </div>
+
+          <div className="card overflow-hidden bg-[var(--carbon)] border-[var(--border)]">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-[var(--border)] bg-[var(--ash)] text-xs font-mono text-[var(--text-3)] uppercase tracking-wider h-9">
+                  <th className="px-4 py-3 font-medium">Problem</th>
+                  <th className="px-4 py-3 font-medium">Difficulty</th>
+                  <th className="px-4 py-3 font-medium">Tags</th>
+                  <th className="px-4 py-3 font-medium">Submissions</th>
+                  <th className="px-4 py-3 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border)]">
+                {loading && (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-3)] font-mono">Loading problem catalog...</td></tr>
+                )}
+                {!loading && problems.length === 0 && (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-[var(--text-3)] font-mono">No problems found.</td></tr>
+                )}
+                {problems.map(p => {
+                  const problemId = p._id || p.id;
+                  const accepted = p.totalAccepted ?? 0;
+                  const count = p.submissionsCount ?? 0;
+                  const rate = count > 0 ? ((accepted / count) * 100).toFixed(0) : '0';
+
+                  return (
+                    <tr key={problemId} className="hover:bg-[var(--ash)] transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-[var(--bone)] text-sm">{p.title}</div>
+                        <div className="text-xs font-mono text-[var(--text-3)]">/{p.slug}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-semibold ${
+                          p.difficulty === 'Easy'
+                            ? 'bg-[var(--green-dim)] text-[var(--green)]'
+                            : p.difficulty === 'Medium'
+                            ? 'bg-[var(--amber-dim)] text-[var(--amber)]'
+                            : 'bg-[var(--red-dim)] text-[var(--red)]'
+                        }`}>
+                          {p.difficulty}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {(p.tags || []).slice(0, 3).map(t => (
+                            <span key={t} className="px-1.5 py-0.5 rounded bg-[var(--ash)] border border-[var(--border)] text-[10px] font-mono text-[var(--text-2)]">
+                              #{t}
+                            </span>
+                          ))}
+                          {(p.tags || []).length > 3 && (
+                            <span className="text-[10px] font-mono text-[var(--text-3)] self-center">
+                              +{p.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[var(--text-2)] font-mono">
+                        <div>{count} total ({rate}% AR)</div>
+                        <div className="text-[11px] text-[var(--text-3)]">{accepted} AC</div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/admin/problems/${problemId}/edit`}
+                            className="btn-secondary !text-xs !py-1 !px-2.5 flex items-center gap-1.5 font-mono text-[var(--verdigris)] hover:border-[var(--verdigris)]"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </Link>
+                          <Link
+                            to={`/problems/${p.slug || problemId}`}
+                            className="text-[var(--text-3)] hover:text-[var(--bone)] p-1 transition-colors"
+                            title="View in Problem Workspace"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
