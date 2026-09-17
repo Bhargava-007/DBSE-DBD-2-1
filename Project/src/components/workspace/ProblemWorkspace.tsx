@@ -13,6 +13,7 @@ import { MonacoCodeEditor } from './MonacoCodeEditor';
 import { ConsoleRunner } from './ConsoleRunner';
 import { BottomActionBar } from './BottomActionBar';
 import { AlgorithmVisualizer } from './AlgorithmVisualizer';
+import { StressTester } from './StressTester';
 import { DifficultyBadge } from '../common/DifficultyBadge';
 import { 
   ArrowLeft,
@@ -27,6 +28,7 @@ import {
   Columns,
   Keyboard,
   Sparkles,
+  Zap,
   X
 } from 'lucide-react';
 
@@ -87,6 +89,7 @@ export const ProblemWorkspace: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState<boolean>(false);
   const [isVisualizerOpen, setIsVisualizerOpen] = useState<boolean>(false);
+  const [isStressTesterOpen, setIsStressTesterOpen] = useState<boolean>(false);
 
   // Responsive mobile tab ('desc' | 'editor')
   const [mobileTab, setMobileTab] = useState<'desc' | 'editor'>('desc');
@@ -196,7 +199,7 @@ export const ProblemWorkspace: React.FC = () => {
     submitSolution(activeProblem, language, currentCode);
   }, [isRunningCode, isSubmitting, submitSolution, activeProblem, language, currentCode]);
 
-  // Keyboard shortcuts (Cmd/Ctrl+Enter to Run, Cmd/Ctrl+Shift+Enter to Submit, V for Visualizer)
+  // Keyboard shortcuts (Cmd/Ctrl+Enter to Run, Cmd/Ctrl+Shift+Enter to Submit, V for Visualizer, S for Stress Tester)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;
@@ -220,6 +223,9 @@ export const ProblemWorkspace: React.FC = () => {
       }
 
       if (e.key === 'Escape') {
+        if (isStressTesterOpen) {
+          setIsStressTesterOpen(false);
+        }
         if (isVisualizerOpen) {
           setIsVisualizerOpen(false);
         }
@@ -233,12 +239,20 @@ export const ProblemWorkspace: React.FC = () => {
       if ((e.key === 'v' || e.key === 'V') && !isCmdOrCtrl && !e.altKey && !isInputActive) {
         e.preventDefault();
         setIsVisualizerOpen(prev => !prev);
+        return;
+      }
+
+      // S or s key toggles the Stress Tester when not actively typing in code/input fields
+      if ((e.key === 's' || e.key === 'S') && !isCmdOrCtrl && !e.altKey && !isInputActive) {
+        e.preventDefault();
+        setIsStressTesterOpen(prev => !prev);
+        return;
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun, handleSubmit, isVisualizerOpen, showShortcutsModal]);
+  }, [handleRun, handleSubmit, isVisualizerOpen, isStressTesterOpen, showShortcutsModal]);
 
   // Horizontal Dragging (Left / Right resize)
   useEffect(() => {
@@ -376,6 +390,21 @@ export const ProblemWorkspace: React.FC = () => {
         {/* Right Section: Prev/Next & Quick Tools */}
         <div className="flex items-center gap-1.5 text-[var(--text-3)]">
           
+          {/* Stress Tester Trigger Button */}
+          <button
+            onClick={() => setIsStressTesterOpen(!isStressTesterOpen)}
+            className={`flex items-center gap-1 px-2 py-1 rounded transition-colors text-xs font-mono cursor-pointer ${
+              isStressTesterOpen 
+                ? 'bg-[var(--accent-dim)] text-[var(--verdigris)] border border-[var(--accent-border)] font-semibold' 
+                : 'hover:text-[var(--bone)] hover:bg-[var(--ash)] text-[var(--text-3)]'
+            }`}
+            title="Dual-Engine Stress Tester (Press S)"
+          >
+            <Zap className="w-3.5 h-3.5 text-[var(--amber)]" />
+            <span className="hidden sm:inline">Stress Test</span>
+            <kbd className="hidden md:inline-block px-1 py-0.2 rounded bg-[var(--obsidian)] text-[10px] text-[var(--text-3)] border border-[var(--border)]">S</kbd>
+          </button>
+
           {/* Algorithm Visualizer Trigger Button */}
           <button
             onClick={() => setIsVisualizerOpen(!isVisualizerOpen)}
@@ -560,6 +589,10 @@ export const ProblemWorkspace: React.FC = () => {
                 <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--verdigris)]">Ctrl / ⌘ + Shift + Enter</kbd>
               </div>
               <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
+                <span className="text-[var(--text-2)]">Dual-Engine Stress Tester</span>
+                <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--amber)] font-bold">S</kbd>
+              </div>
+              <div className="flex items-center justify-between py-1.5 border-b border-[var(--border)]">
                 <span className="text-[var(--text-2)]">Algorithm Visualizer</span>
                 <kbd className="px-2 py-0.5 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--verdigris)]">V</kbd>
               </div>
@@ -584,6 +617,19 @@ export const ProblemWorkspace: React.FC = () => {
         problem={activeProblem}
         isOpen={isVisualizerOpen}
         onClose={() => setIsVisualizerOpen(false)}
+      />
+
+      {/* Dual-Engine Stress Tester Panel */}
+      <StressTester
+        problem={activeProblem}
+        isOpen={isStressTesterOpen}
+        onClose={() => setIsStressTesterOpen(false)}
+        activeLanguage={language}
+        currentWorkspaceCode={currentCode}
+        onApplyInputToConsole={(input) => {
+          setCustomInput(input);
+          setIsConsoleOpen(true);
+        }}
       />
 
     </div>
