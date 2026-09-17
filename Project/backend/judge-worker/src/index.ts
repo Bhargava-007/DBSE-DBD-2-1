@@ -6,14 +6,15 @@ import mongoose from 'mongoose';
 import { connectDB, disconnectDB } from './config/db';
 import { connectRedis, redisClient } from './config/redis';
 import { dockerSandbox } from './sandbox/DockerSandbox';
-import { startJudgeWorker } from './worker';
+import { startJudgeWorker, stopJudgeWorker } from './worker';
+import { logger } from './logger';
 
 const PORT = process.env.PORT || 4003;
 
 const initWorkerService = async () => {
-  console.log('====================================================');
-  console.log('⚡ AlgoFlow Judge Worker Service Initializing...');
-  console.log('====================================================');
+  logger.info('====================================================');
+  logger.info('⚡ AlgoFlow Judge Worker Service Initializing...');
+  logger.info('====================================================');
 
   try {
     // 1. Connect MongoDB
@@ -25,18 +26,18 @@ const initWorkerService = async () => {
     // 3. Check Docker Engine connectivity
     const isDockerOnline = await dockerSandbox.isDockerAvailable();
     if (isDockerOnline) {
-      console.log('🐳 Docker Engine: ONLINE (Local sandbox isolation ready)');
-      console.log('[Sandbox] Pre-pulling language images in background...');
+      logger.info('🐳 Docker Engine: ONLINE (Local sandbox isolation ready)');
+      logger.info('[Sandbox] Pre-pulling language images in background...');
       const images = ['gcc:13', 'python:3.12-alpine', 'openjdk:21-alpine', 'node:20-alpine'];
       Promise.all(images.map(img => dockerSandbox.ensureImage(img)))
-        .then(() => console.log('[Sandbox] All language images ready.'))
-        .catch(err => console.warn('[Sandbox] Image pre-pull notice:', err.message));
+        .then(() => logger.info('[Sandbox] All language images ready.'))
+        .catch(err => logger.warn({ err }, `[Sandbox] Image pre-pull notice: ${err.message}`));
     } else {
-      console.warn('⚠️  Docker Engine: OFFLINE. C++ and Java submissions will return an error until Docker Desktop is started. Python and JavaScript will execute on host.');
+      logger.warn('⚠️  Docker Engine: OFFLINE. C++ and Java submissions will return an error until Docker Desktop is started. Python and JavaScript will execute on host.');
     }
 
-    // 4. Start BullMQ Worker
-    const worker = startJudgeWorker();
+    // 4. Start BullMQ Worker with auto-restart handling
+    startJudgeWorker();
 
     // 5. Health Check HTTP Server
     const healthServer = http.createServer(async (req, res) => {
@@ -70,7 +71,7 @@ const initWorkerService = async () => {
     });
 
     healthServer.listen(PORT, () => {
-      console.log(`🚀 Judge Worker Health Server listening on http://localhost:${PORT}`);
+      logger.info(`🚀 Judge Worker Health Server listening on http://localhost:${PORT}`);
     });
 
     // 6. Graceful Shutdown
@@ -78,46 +79,46 @@ const initWorkerService = async () => {
     const shutdown = async (signal: string) => {
       if (isShuttingDown) return;
       isShuttingDown = true;
-      console.log(`\n[Judge Worker] Received ${signal}. Initiating graceful shutdown...`);
+      logger.info(`\n[Judge Worker] Received ${signal}. Initiating graceful shutdown...`);
 
       try {
         // Step 1: Close HTTP health server
         await new Promise<void>((resolve) => {
           healthServer.close((err) => {
-            if (err) console.warn('[Judge Worker] HTTP server close notice:', err.message);
-            console.log('[Judge Worker] 1. HTTP server closed.');
+            if (err) logger.warn({ err }, `[Judge Worker] HTTP server close notice: ${err.message}`);
+            logger.info('[Judge Worker] 1. HTTP server closed.');
             resolve();
           });
         });
 
-        // Step 2: Close BullMQ Worker
+        // Step 2: Stop and close BullMQ Worker
         try {
-          await worker.close();
-          console.log('[Judge Worker] 2. BullMQ worker closed.');
+          await stopJudgeWorker();
+          logger.info('[Judge Worker] 2. BullMQ worker closed.');
         } catch (workerErr: any) {
-          console.warn('[Judge Worker] Worker close notice:', workerErr.message);
+          logger.warn({ err: workerErr }, `[Judge Worker] Worker close notice: ${workerErr.message}`);
         }
 
         // Step 3: Disconnect MongoDB
         try {
           await disconnectDB();
-          console.log('[Judge Worker] 3. MongoDB disconnected.');
+          logger.info('[Judge Worker] 3. MongoDB disconnected.');
         } catch (dbErr: any) {
-          console.warn('[Judge Worker] MongoDB disconnect notice:', dbErr.message);
+          logger.warn({ err: dbErr }, `[Judge Worker] MongoDB disconnect notice: ${dbErr.message}`);
         }
 
         // Step 4: Disconnect Redis
         try {
           await redisClient.quit();
-          console.log('[Judge Worker] 4. Redis disconnected.');
+          logger.info('[Judge Worker] 4. Redis disconnected.');
         } catch (redisErr: any) {
-          console.warn('[Judge Worker] Redis disconnect notice:', redisErr.message);
+          logger.warn({ err: redisErr }, `[Judge Worker] Redis disconnect notice: ${redisErr.message}`);
         }
 
-        console.log('[Judge Worker] Graceful shutdown completed. Exiting code 0.');
+        logger.info('[Judge Worker] Graceful shutdown completed. Exiting code 0.');
         process.exit(0);
       } catch (err: any) {
-        console.error('[Judge Worker] Error during shutdown:', err);
+        logger.error({ err }, '[Judge Worker] Error during shutdown: ' + (err?.message || err));
         process.exit(1);
       }
     };
@@ -125,7 +126,7 @@ const initWorkerService = async () => {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error: any) {
-    console.error('[Worker Service] Initialization failure:', error);
+    logger.error({ err: error }, '[Worker Service] Initialization failure: ' + (error?.message || error));
     process.exit(1);
   }
 };

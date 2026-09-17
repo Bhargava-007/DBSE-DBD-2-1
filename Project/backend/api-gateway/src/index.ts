@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
 import { connectDB, disconnectDB } from './config/db';
 import { connectRedis, redisClient } from './config/redis';
+import logger from './logger';
 
 // Route Imports
 import authRoutes from './routes/auth';
@@ -108,7 +109,7 @@ app.use((req: Request, res: Response) => {
 
 // 6. Global Unhandled Error Handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[Global Error Handler]', err);
+  logger.error({ err }, '[Global Error Handler]');
 
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -130,11 +131,9 @@ const startServer = async () => {
     await connectRedis();
 
     const server = app.listen(PORT, () => {
-      console.log('====================================================');
-      console.log(`🚀 AlgoFlow API Gateway running on http://localhost:${PORT}`);
-      console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔒 CORS Origin: ${CORS_ORIGIN}`);
-      console.log('====================================================');
+      logger.info(`🚀 AlgoFlow API Gateway running on http://localhost:${PORT}`);
+      logger.info(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`🔒 CORS Origin: ${CORS_ORIGIN}`);
     });
 
     // Graceful Shutdown
@@ -142,14 +141,14 @@ const startServer = async () => {
     const shutdown = async (signal: string) => {
       if (isShuttingDown) return;
       isShuttingDown = true;
-      console.log(`\n[API Gateway] Received ${signal}. Initiating graceful shutdown...`);
+      logger.info(`Received ${signal}. Initiating graceful shutdown...`);
 
       try {
         // Step 1: Close HTTP server
         await new Promise<void>((resolve) => {
           server.close((err) => {
-            if (err) console.warn('[API Gateway] HTTP server close notice:', err.message);
-            console.log('[API Gateway] 1. HTTP server closed.');
+            if (err) logger.warn({ err: err.message }, 'HTTP server close notice');
+            logger.info('1. HTTP server closed.');
             resolve();
           });
         });
@@ -157,23 +156,23 @@ const startServer = async () => {
         // Step 2: Disconnect MongoDB
         try {
           await disconnectDB();
-          console.log('[API Gateway] 2. MongoDB disconnected.');
+          logger.info('2. MongoDB disconnected.');
         } catch (dbErr: any) {
-          console.warn('[API Gateway] MongoDB disconnect notice:', dbErr.message);
+          logger.warn({ err: dbErr.message }, 'MongoDB disconnect notice');
         }
 
         // Step 3: Disconnect Redis
         try {
           await redisClient.quit();
-          console.log('[API Gateway] 3. Redis disconnected.');
+          logger.info('3. Redis disconnected.');
         } catch (redisErr: any) {
-          console.warn('[API Gateway] Redis disconnect notice:', redisErr.message);
+          logger.warn({ err: redisErr.message }, 'Redis disconnect notice');
         }
 
-        console.log('[API Gateway] Graceful shutdown completed. Exiting code 0.');
+        logger.info('Graceful shutdown completed. Exiting code 0.');
         process.exit(0);
       } catch (err: any) {
-        console.error('[API Gateway] Error during shutdown:', err);
+        logger.error({ err }, 'Error during shutdown');
         process.exit(1);
       }
     };
@@ -181,7 +180,7 @@ const startServer = async () => {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error) {
-    console.error('[Server] Failed to initialize server:', error);
+    logger.error({ error }, 'Failed to initialize server');
     process.exit(1);
   }
 };

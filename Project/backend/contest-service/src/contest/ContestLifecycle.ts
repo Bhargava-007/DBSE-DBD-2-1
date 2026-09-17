@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import { Contest } from '../models/Contest';
 import { emitToContest, broadcastGlobal } from '../socket/SocketManager';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
+import { logger } from '../logger';
 
 export class ContestLifecycle {
   private cronTask: cron.ScheduledTask | null = null;
@@ -11,7 +12,7 @@ export class ContestLifecycle {
    * Start the recurring 1-minute contest state machine monitor
    */
   public start(): void {
-    console.log('[Contest Lifecycle] Starting contest schedule monitor (Running every minute)...');
+    logger.info('[Contest Lifecycle] Starting contest schedule monitor (Running every minute)...');
 
     // Run an initial check immediately on startup
     this.checkContests();
@@ -29,7 +30,7 @@ export class ContestLifecycle {
     if (this.cronTask) {
       this.cronTask.stop();
       this.cronTask = null;
-      console.log('[Contest Lifecycle] Stopped contest schedule monitor.');
+      logger.info('[Contest Lifecycle] Stopped contest schedule monitor.');
     }
   }
 
@@ -53,7 +54,7 @@ export class ContestLifecycle {
         contest.status = 'live';
         await contest.save();
 
-        console.log(`[Contest Lifecycle] 🏁 Contest LIVE: "${contest.title}" (${contest._id})`);
+        logger.info(`[Contest Lifecycle] 🏁 Contest LIVE: "${contest.title}" (${contest._id})`);
 
         // Emit room event and global notification
         emitToContest(contest._id.toString(), 'contest:started', {
@@ -97,12 +98,12 @@ export class ContestLifecycle {
             penaltyMinutes: entry.penaltyMinutes,
           }));
         } catch (rankErr: any) {
-          console.warn(`[Contest Lifecycle] Notice freezing final rankings for contest ${contest._id}:`, rankErr.message);
+          logger.warn({ err: rankErr }, `[Contest Lifecycle] Notice freezing final rankings for contest ${contest._id}: ${rankErr.message}`);
         }
 
         await contest.save();
 
-        console.log(`[Contest Lifecycle] 🏆 Contest ENDED: "${contest.title}" (${contest._id}). Finalized ${contest.finalRankings.length} participant rankings.`);
+        logger.info(`[Contest Lifecycle] 🏆 Contest ENDED: "${contest.title}" (${contest._id}). Finalized ${contest.finalRankings.length} participant rankings.`);
 
         // Emit room event and global notification
         emitToContest(contest._id.toString(), 'contest:ended', {
@@ -119,7 +120,7 @@ export class ContestLifecycle {
         });
       }
     } catch (error: any) {
-      console.error('[Contest Lifecycle] Error evaluating contest state machine:', error.message);
+      logger.error({ err: error }, '[Contest Lifecycle] Error evaluating contest state machine: ' + error.message);
     } finally {
       this.isRunningCheck = false;
     }

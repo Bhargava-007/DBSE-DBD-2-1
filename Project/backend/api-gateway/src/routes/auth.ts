@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { User, IUser } from '../models/User';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import logger from '../logger';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'algoflow_jwt_secret_dev_key_2026';
@@ -105,7 +106,7 @@ router.post(
         message: 'Account registered successfully.',
       });
     } catch (error: any) {
-      console.error('[Auth Route] Register Error:', error);
+      logger.error({ error }, '[Auth Route] Register Error');
       res.status(500).json({
         success: false,
         error: 'An unexpected error occurred while creating your account.',
@@ -160,7 +161,7 @@ router.post(
         message: 'Logged in successfully.',
       });
     } catch (error: any) {
-      console.error('[Auth Route] Login Error:', error);
+      logger.error({ error }, '[Auth Route] Login Error');
       res.status(500).json({
         success: false,
         error: 'An unexpected error occurred during authentication.',
@@ -195,7 +196,7 @@ router.get(
         data: user,
       });
     } catch (error: any) {
-      console.error('[Auth Route] Get Profile Error:', error);
+      logger.error({ error }, '[Auth Route] Get Profile Error');
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve user profile.',
@@ -232,7 +233,7 @@ router.put(
         message: 'Profile updated successfully.',
       });
     } catch (error: any) {
-      console.error('[Auth Route] Update Profile Error:', error);
+      logger.error({ error }, '[Auth Route] Update Profile Error');
       res.status(500).json({
         success: false,
         error: 'Failed to update user profile.',

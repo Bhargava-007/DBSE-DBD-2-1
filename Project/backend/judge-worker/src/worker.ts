@@ -6,6 +6,7 @@ import { User } from './models/User';
 import { Contest } from './models/Contest';
 import { testRunner, EvaluationSummary } from './judge/TestRunner';
 import { SupportedLanguage } from './judge/languages';
+import { logger } from './logger';
 
 export interface SubmissionJobPayload {
   submissionId: string;
@@ -82,9 +83,9 @@ const updateContestLeaderboard = async (
     const redisKey = `contest:${contestId}:leaderboard`;
 
     await redisClient.zadd(redisKey, rankScore, userId);
-    console.log(`[Contest Leaderboard] Updated Redis ZSET '${redisKey}': user=${userId} score=${rankScore} (solved=${solvedCount}, penalty=${penaltyMinutes}m)`);
+    logger.info(`[Contest Leaderboard] Updated Redis ZSET '${redisKey}': user=${userId} score=${rankScore} (solved=${solvedCount}, penalty=${penaltyMinutes}m)`);
   } catch (error: any) {
-    console.warn(`[Contest Leaderboard] Error updating leaderboard for contest ${contestId}:`, error.message);
+    logger.warn({ err: error }, `[Contest Leaderboard] Error updating leaderboard for contest ${contestId}: ${error.message}`);
   }
 };
 
@@ -94,7 +95,7 @@ const updateContestLeaderboard = async (
 export const processSubmissionJob = async (job: Job<SubmissionJobPayload>): Promise<EvaluationSummary> => {
   const { submissionId, problemId, userId, contestId, language, code, timeLimitMs, memoryLimitMb, testCases } = job.data;
 
-  console.log(`[Worker] Started judging submission ${submissionId} (Lang: ${language.toUpperCase()}, TestCases: ${testCases.length})`);
+  logger.info(`[Worker] Started judging submission ${submissionId} (Lang: ${language.toUpperCase()}, TestCases: ${testCases.length})`);
 
   // 1. Mark submission status as 'Running' in MongoDB
   await Submission.findByIdAndUpdate(submissionId, { verdict: 'Running' });
@@ -108,7 +109,7 @@ export const processSubmissionJob = async (job: Job<SubmissionJobPayload>): Prom
     memoryLimitMb,
   });
 
-  console.log(`[Worker] Judged submission ${submissionId} -> Verdict: ${evaluation.finalVerdict} (${evaluation.testCasesPassed}/${evaluation.totalTestCases} passed, ${evaluation.maxExecutionTimeMs}ms, ${evaluation.maxMemoryKb}KB)`);
+  logger.info(`[Worker] Judged submission ${submissionId} -> Verdict: ${evaluation.finalVerdict} (${evaluation.testCasesPassed}/${evaluation.totalTestCases} passed, ${evaluation.maxExecutionTimeMs}ms, ${evaluation.maxMemoryKb}KB)`);
 
   // 3. Persist final results to MongoDB
   const stdoutSnippet = evaluation.results.find((r) => r.stdout.length > 0)?.stdout;
@@ -146,11 +147,11 @@ export const processSubmissionJob = async (job: Job<SubmissionJobPayload>): Prom
 
           await user.save();
           await Problem.findByIdAndUpdate(problemId, { $inc: { totalAccepted: 1 } });
-          console.log(`[Worker] Solved problem recorded for user ${user.username}. New rating: ${user.rating}`);
+          logger.info(`[Worker] Solved problem recorded for user ${user.username}. New rating: ${user.rating}`);
         }
       }
     } catch (statErr: any) {
-      console.warn(`[Worker] User stat update error: ${statErr.message}`);
+      logger.warn({ err: statErr }, `[Worker] User stat update error: ${statErr.message}`);
     }
   }
 
@@ -162,10 +163,99 @@ export const processSubmissionJob = async (job: Job<SubmissionJobPayload>): Prom
   return evaluation;
 };
 
+const INITIAL_BACKOFF_MS = 5000;
+const MAX_BACKOFF_MS = 60000;
+
+let currentWorker: Worker<SubmissionJobPayload> | null = null;
+let retryDelayMs = INITIAL_BACKOFF_MS;
+let restartTimeout: ReturnType<typeof setTimeout> | null = null;
+let isRestarting = false;
+let isTerminating = false;
+
 /**
- * Initialize and return the BullMQ Worker instance
+ * Resets the exponential backoff delay to initial 5s on successful job completion
+ */
+export const resetBackoffDelay = (): void => {
+  if (retryDelayMs !== INITIAL_BACKOFF_MS) {
+    logger.info(`[Worker Manager] Job completed successfully. Resetting auto-restart backoff delay to ${INITIAL_BACKOFF_MS / 1000}s.`);
+    retryDelayMs = INITIAL_BACKOFF_MS;
+  }
+};
+
+/**
+ * Schedule auto-restart with exponential backoff (5s -> 10s -> 20s -> 40s -> max 60s)
+ */
+export const scheduleWorkerRestart = (reason: string): void => {
+  if (isTerminating || isRestarting) return;
+  isRestarting = true;
+
+  const waitTime = retryDelayMs;
+  logger.error(`[Worker Manager] Worker error/crash detected (${reason}). Waiting ${waitTime / 1000}s before auto-restart (exponential backoff)...`);
+
+  // Calculate next retry delay for subsequent failures
+  retryDelayMs = Math.min(retryDelayMs * 2, MAX_BACKOFF_MS);
+
+  if (restartTimeout) {
+    clearTimeout(restartTimeout);
+  }
+
+  restartTimeout = setTimeout(async () => {
+    isRestarting = false;
+    if (isTerminating) return;
+
+    try {
+      if (currentWorker) {
+        try {
+          await currentWorker.close();
+        } catch {
+          // ignore cleanup notice
+        }
+        currentWorker = null;
+      }
+
+      logger.info('[Worker Manager] Reinitializing BullMQ judge worker instance...');
+      startJudgeWorker();
+    } catch (err: any) {
+      logger.error({ err }, '[Worker Manager] Worker reinitialization failed: ' + err.message);
+      scheduleWorkerRestart(err.message);
+    }
+  }, waitTime);
+};
+
+/**
+ * Stop and close worker instance (invoked during graceful shutdown)
+ */
+export const stopJudgeWorker = async (): Promise<void> => {
+  isTerminating = true;
+  if (restartTimeout) {
+    clearTimeout(restartTimeout);
+    restartTimeout = null;
+  }
+
+  if (currentWorker) {
+    try {
+      await currentWorker.close();
+      logger.info('[Worker Manager] Active BullMQ worker instance closed.');
+    } catch (err: any) {
+      logger.warn({ err }, '[Worker Manager] Worker close notice: ' + err.message);
+    }
+    currentWorker = null;
+  }
+};
+
+/**
+ * Get active worker instance
+ */
+export const getActiveWorker = (): Worker<SubmissionJobPayload> | null => {
+  return currentWorker;
+};
+
+/**
+ * Initialize and return the BullMQ Worker instance with auto-restart handling
  */
 export const startJudgeWorker = (): Worker<SubmissionJobPayload> => {
+  isTerminating = false;
+
   const worker = new Worker<SubmissionJobPayload>(
     SUBMISSION_QUEUE_NAME,
     async (job) => {
@@ -181,20 +271,32 @@ export const startJudgeWorker = (): Worker<SubmissionJobPayload> => {
     }
   );
 
+  currentWorker = worker;
+
   worker.on('ready', () => {
-    console.log(`[Worker] BullMQ Worker connected to '${SUBMISSION_QUEUE_NAME}' queue (Concurrency: ${CONCURRENCY})`);
+    logger.info(`[Worker] BullMQ Worker connected to '${SUBMISSION_QUEUE_NAME}' queue (Concurrency: ${CONCURRENCY})`);
   });
 
   worker.on('completed', (job) => {
-    console.log(`[Worker] Job ${job.id} completed successfully.`);
+    logger.info(`[Worker] Job ${job.id} completed successfully.`);
+    // Reset backoff counter on successful job
+    resetBackoffDelay();
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`[Worker] Job ${job?.id} failed with error:`, err.message);
+    logger.error({ err }, `[Worker] Job ${job?.id} failed with error: ` + err.message);
   });
 
   worker.on('error', (err) => {
-    console.warn(`[Worker] BullMQ worker connection notice:`, err.message);
+    logger.error({ err }, `[Worker] BullMQ worker emitted error: ` + err.message);
+    scheduleWorkerRestart(err.message);
+  });
+
+  worker.on('closed', () => {
+    if (!isTerminating && !isRestarting) {
+      logger.warn(`[Worker] BullMQ worker closed unexpectedly. Initiating auto-restart...`);
+      scheduleWorkerRestart('Worker closed unexpectedly');
+    }
   });
 
   return worker;

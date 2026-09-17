@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { redisClient } from '../config/redis';
+import logger from '../logger';
 
 export interface SubmissionJobData {
   submissionId: string;
@@ -46,10 +47,10 @@ export const enqueueSubmission = async (jobData: SubmissionJobData) => {
     const job = await submissionQueue.add(`judge-${jobData.submissionId}`, jobData, {
       jobId: jobData.submissionId,
     });
-    console.log(`[Queue] Enqueued submission ${jobData.submissionId} to ${SUBMISSION_QUEUE_NAME} queue (Job ID: ${job.id})`);
+    logger.info(`[Queue] Enqueued submission ${jobData.submissionId} to ${SUBMISSION_QUEUE_NAME} queue (Job ID: ${job.id})`);
     return job;
   } catch (error: any) {
-    console.error(`[Queue] Failed to enqueue submission ${jobData.submissionId}:`, error.message);
+    logger.error({ error }, `[Queue] Failed to enqueue submission ${jobData.submissionId}`);
     throw new Error(`Submission queue failure: ${error.message}`);
   }
 };

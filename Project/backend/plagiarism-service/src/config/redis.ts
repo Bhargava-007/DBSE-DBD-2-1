@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { logger } from '../logger';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -12,11 +13,11 @@ export const redisClient = new Redis(redisUrl, {
 });
 
 redisClient.on('connect', () => {
-  console.log('[Plagiarism Redis] Connected to Redis successfully.');
+  logger.info('[Plagiarism Redis] Connected to Redis successfully.');
 });
 
 redisClient.on('error', (err) => {
-  console.warn('[Plagiarism Redis] Redis notice:', err.message);
+  logger.warn({ err }, '[Plagiarism Redis] Redis notice: ' + err.message);
 });
 
 export const connectRedis = async (): Promise<void> => {
@@ -25,6 +26,6 @@ export const connectRedis = async (): Promise<void> => {
       await redisClient.connect();
     }
   } catch (error: any) {
-    console.warn(`[Plagiarism Redis] Redis not reachable at ${redisUrl}: ${error.message}`);
+    logger.warn({ err: error }, `[Plagiarism Redis] Redis not reachable at ${redisUrl}: ${error.message}`);
   }
 };

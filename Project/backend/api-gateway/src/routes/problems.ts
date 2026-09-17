@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Problem, IProblem } from '../models/Problem';
 import { authenticate, authorize, optionalAuthenticate, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import logger from '../logger';
 
 const router = Router();
 
@@ -114,7 +115,7 @@ router.get(
         },
       });
     } catch (error: any) {
-      console.error('[Problems Route] List Error:', error);
+      logger.error({ error }, '[Problems Route] List Error');
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve problems list.',
@@ -161,7 +162,7 @@ router.get(
         data: problem,
       });
     } catch (error: any) {
-      console.error('[Problems Route] Detail Error:', error);
+      logger.error({ error }, '[Problems Route] Detail Error');
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve problem details.',
@@ -206,7 +207,7 @@ router.post(
         message: 'Problem created successfully.',
       });
     } catch (error: any) {
-      console.error('[Problems Route] Create Error:', error);
+      logger.error({ error }, '[Problems Route] Create Error');
       res.status(500).json({
         success: false,
         error: 'Failed to create new problem.',
@@ -252,7 +253,7 @@ router.put(
         message: 'Problem updated successfully.',
       });
     } catch (error: any) {
-      console.error('[Problems Route] Update Error:', error);
+      logger.error({ error }, '[Problems Route] Update Error');
       res.status(500).json({
         success: false,
         error: 'Failed to update problem.',
@@ -287,7 +288,7 @@ router.delete(
         message: `Problem '${problem.title}' deleted successfully.`,
       });
     } catch (error: any) {
-      console.error('[Problems Route] Delete Error:', error);
+      logger.error({ error }, '[Problems Route] Delete Error');
       res.status(500).json({
         success: false,
         error: 'Failed to delete problem.',

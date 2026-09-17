@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { redisClient } from '../config/redis';
 import { plagiarismDetector } from '../plagiarism/PlagiarismDetector';
 import { PlagiarismReport } from '../models/PlagiarismReport';
+import { logger } from '../logger';
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.post('/scan', async (req: Request, res: Response): Promise<void> => {
       message: `Plagiarism analysis complete for contest ${contestId}.`,
     });
   } catch (error: any) {
-    console.error('[Plagiarism Route] Scan Error:', error);
+    logger.error({ err: error }, '[Plagiarism Route] Scan Error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to analyze contest plagiarism.',
@@ -63,7 +64,7 @@ router.get('/scan/:contestId', async (req: Request, res: Response): Promise<void
       data: report,
     });
   } catch (error: any) {
-    console.error('[Plagiarism Route] Results Error:', error);
+    logger.error({ err: error }, '[Plagiarism Route] Results Error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve plagiarism results.',
@@ -88,7 +89,7 @@ router.post('/contest/:contestId/analyze', async (req: Request, res: Response): 
       message: `Plagiarism analysis complete for contest ${contestId}.`,
     });
   } catch (error: any) {
-    console.error('[Plagiarism Route] Contest Analyze Error:', error);
+    logger.error({ err: error }, '[Plagiarism Route] Contest Analyze Error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to analyze contest plagiarism.',
@@ -121,7 +122,7 @@ router.get('/contest/:contestId/results', async (req: Request, res: Response): P
       data: report,
     });
   } catch (error: any) {
-    console.error('[Plagiarism Route] Results Error:', error);
+    logger.error({ err: error }, '[Plagiarism Route] Results Error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve plagiarism results.',
@@ -145,7 +146,7 @@ router.post('/submission/:submissionId/check', async (req: Request, res: Respons
       data: result,
     });
   } catch (error: any) {
-    console.error('[Plagiarism Route] Submission Check Error:', error);
+    logger.error({ err: error }, '[Plagiarism Route] Submission Check Error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to check submission plagiarism.',

@@ -5,6 +5,7 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import { createTarArchive } from './tarHelper';
 import { LANGUAGE_CONFIGS, SupportedLanguage } from '../judge/languages';
+import { logger } from '../logger';
 
 export interface SandboxExecutionParams {
   language: SupportedLanguage;
@@ -64,15 +65,15 @@ export class DockerSandbox {
         filters: { reference: [imageName] },
       });
       if (images.length === 0) {
-        console.log(`[Sandbox] Pulling base image: ${imageName}...`);
+        logger.info(`[Sandbox] Pulling base image: ${imageName}...`);
         const stream = await this.docker.pull(imageName);
         await new Promise((resolve, reject) => {
           this.docker.modem.followProgress(stream, (err, res) => (err ? reject(err) : resolve(res)));
         });
-        console.log(`[Sandbox] Image pulled successfully: ${imageName}`);
+        logger.info(`[Sandbox] Image pulled successfully: ${imageName}`);
       }
     } catch (err: any) {
-      console.warn(`[Sandbox] Notice checking image ${imageName}: ${err.message}`);
+      logger.warn({ err }, `[Sandbox] Notice checking image ${imageName}: ${err.message}`);
     }
   }
 

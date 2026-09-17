@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import logger from '../logger';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -13,11 +14,11 @@ export const redisClient = new Redis(redisUrl, {
 });
 
 redisClient.on('connect', () => {
-  console.log('[Redis] Connected to Redis server successfully.');
+  logger.info('[Redis] Connected to Redis server successfully.');
 });
 
 redisClient.on('error', (err) => {
-  console.warn('[Redis] Redis error or server unreachable:', err.message);
+  logger.warn({ err: err.message }, '[Redis] Redis error or server unreachable');
 });
 
 export const connectRedis = async (): Promise<void> => {
@@ -26,6 +27,6 @@ export const connectRedis = async (): Promise<void> => {
       await redisClient.connect();
     }
   } catch (error: any) {
-    console.warn(`[Redis] Note: Redis server at ${redisUrl} not currently active. Submission queuing will fail until Redis starts: ${error.message}`);
+    logger.warn({ err: error.message }, `[Redis] Note: Redis server at ${redisUrl} not currently active.`);
   }
 };

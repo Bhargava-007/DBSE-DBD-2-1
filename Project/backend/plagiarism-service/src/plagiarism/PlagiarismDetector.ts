@@ -4,6 +4,7 @@ import { User } from '../models/User';
 import { PlagiarismReport, ISuspiciousMatch } from '../models/PlagiarismReport';
 import { tokenize } from './Tokenizer';
 import { generateNgrams, winnow, jaccardSimilarity } from './Fingerprinter';
+import { logger } from '../logger';
 
 export interface ComparisonResult {
   submission1Id: string;
@@ -32,7 +33,7 @@ export class PlagiarismDetector {
     flaggedPairsCount: number;
     matches: ISuspiciousMatch[];
   }> {
-    console.log(`[Plagiarism Detector] Starting full contest analysis for contest ${contestId} (Threshold: ${threshold * 100}%)...`);
+    logger.info(`[Plagiarism Detector] Starting full contest analysis for contest ${contestId} (Threshold: ${threshold * 100}%)...`);
 
     // 1. Fetch all Accepted submissions for this contest
     const submissions = await Submission.find({
@@ -111,7 +112,7 @@ export class PlagiarismDetector {
             };
 
             matches.push(match);
-            console.log(`[Plagiarism Detected] ⚠️ Flagged: ${match.user1Username} vs ${match.user2Username} on problem ${problemId} (Similarity: ${(similarity * 100).toFixed(1)}%)`);
+            logger.info(`[Plagiarism Detected] ⚠️ Flagged: ${match.user1Username} vs ${match.user2Username} on problem ${problemId} (Similarity: ${(similarity * 100).toFixed(1)}%)`);
           }
         }
       }
@@ -131,7 +132,7 @@ export class PlagiarismDetector {
       { upsert: true, new: true }
     );
 
-    console.log(`[Plagiarism Detector] Completed analysis for contest ${contestId}. Flagged ${matches.length} suspicious submission pairs.`);
+    logger.info(`[Plagiarism Detector] Completed analysis for contest ${contestId}. Flagged ${matches.length} suspicious submission pairs.`);
 
     return {
       contestId,

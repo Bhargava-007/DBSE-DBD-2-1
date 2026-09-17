@@ -7,6 +7,7 @@ import { Contest } from '../models/Contest';
 import { authenticate, optionalAuthenticate, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { enqueueSubmission } from '../queue/submissionQueue';
+import { logger } from '../logger';
 
 const router = Router();
 
@@ -146,7 +147,7 @@ router.post(
           testCases: allTestCases,
         });
       } catch (queueErr: any) {
-        console.warn(`[Submissions Route] BullMQ enqueue warning (Redis may be offline): ${queueErr.message}`);
+        logger.warn({ err: queueErr }, `[Submissions Route] BullMQ enqueue warning (Redis may be offline): ${queueErr.message}`);
       }
 
       res.status(201).json({
@@ -155,7 +156,7 @@ router.post(
         message: 'Submission enqueued successfully.',
       });
     } catch (error: any) {
-      console.error('[Submissions Route] Create Error:', error);
+      logger.error({ err: error }, '[Submissions Route] Create Error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to create and dispatch submission.',
@@ -218,7 +219,7 @@ router.get(
         },
       });
     } catch (error: any) {
-      console.error('[Submissions Route] List Error:', error);
+      logger.error({ err: error }, '[Submissions Route] List Error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve submissions list.',
@@ -255,7 +256,7 @@ router.get(
         data: submission,
       });
     } catch (error: any) {
-      console.error('[Submissions Route] Detail Error:', error);
+      logger.error({ err: error }, '[Submissions Route] Detail Error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve submission details.',

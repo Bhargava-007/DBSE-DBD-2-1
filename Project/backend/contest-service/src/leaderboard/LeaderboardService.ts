@@ -1,6 +1,7 @@
 import { redisClient } from '../config/redis';
 import { User, IUser } from '../models/User';
 import { emitToContest } from '../socket/SocketManager';
+import { logger } from '../logger';
 
 export interface LeaderboardEntry {
   rank: number;
@@ -143,7 +144,7 @@ export class LeaderboardService {
     // 4. Broadcast live update to contest room via WebSocket
     emitToContest(contestId, 'leaderboard:update', updatePayload);
 
-    console.log(`[LeaderboardService] Updated score for user ${userId} in contest ${contestId}: rank #${displayRank}, score=${score}`);
+    logger.info(`[LeaderboardService] Updated score for user ${userId} in contest ${contestId}: rank #${displayRank}, score=${score}`);
     return displayRank;
   }
 

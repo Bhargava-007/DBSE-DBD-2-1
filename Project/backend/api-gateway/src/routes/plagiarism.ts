@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import http from 'http';
 import https from 'https';
 import { authenticate, authorize } from '../middleware/auth';
+import { logger } from '../logger';
 
 const router = Router();
 const PLAGIARISM_SERVICE_URL = process.env.PLAGIARISM_SERVICE_URL || 'http://localhost:4002';
@@ -67,7 +68,7 @@ const proxyToPlagiarismService = (req: Request, res: Response, targetPath?: stri
     });
 
     proxyReq.on('error', (err: any) => {
-      console.error('[API Gateway -> Plagiarism Service Proxy Error]:', err.message);
+      logger.error({ err }, '[API Gateway -> Plagiarism Service Proxy Error]: ' + err.message);
       if (!res.headersSent) {
         res.status(502).json({
           success: false,
@@ -84,7 +85,7 @@ const proxyToPlagiarismService = (req: Request, res: Response, targetPath?: stri
 
     proxyReq.end();
   } catch (error: any) {
-    console.error('[Plagiarism Proxy Dispatch Error]:', error);
+    logger.error({ err: error }, '[Plagiarism Proxy Dispatch Error]: ' + (error?.message || error));
     if (!res.headersSent) {
       res.status(500).json({
         success: false,

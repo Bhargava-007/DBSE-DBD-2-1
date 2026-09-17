@@ -8,6 +8,7 @@ import { connectDB, disconnectDB } from './config/db';
 import { connectRedis, redisClient } from './config/redis';
 import { initSocketServer, getIO } from './socket/SocketManager';
 import { contestLifecycle } from './contest/ContestLifecycle';
+import { logger } from './logger';
 
 // Routes
 import contestsRouter from './routes/contests';
@@ -55,7 +56,7 @@ app.use((req: Request, res: Response) => {
 
 // 6. Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[Contest Service Error]', err);
+  logger.error({ err }, '[Contest Service Error]');
   res.status(err.statusCode || 500).json({
     success: false,
     error: err.message || 'Internal Server Error',
@@ -65,9 +66,9 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 // 7. Startup Sequence
 const startServer = async () => {
   try {
-    console.log('====================================================');
-    console.log('🏆 AlgoFlow Contest & Live Leaderboard Service');
-    console.log('====================================================');
+    logger.info('====================================================');
+    logger.info('🏆 AlgoFlow Contest & Live Leaderboard Service');
+    logger.info('====================================================');
 
     // Connect DB & Redis
     await connectDB();
@@ -78,9 +79,9 @@ const startServer = async () => {
 
     // Start HTTP & Socket server
     httpServer.listen(PORT, () => {
-      console.log(`🚀 Contest Service & WebSocket listening on http://localhost:${PORT}`);
-      console.log(`📡 WebSocket endpoint ready for live leaderboard streaming`);
-      console.log('====================================================');
+      logger.info(`🚀 Contest Service & WebSocket listening on http://localhost:${PORT}`);
+      logger.info(`📡 WebSocket endpoint ready for live leaderboard streaming`);
+      logger.info('====================================================');
     });
 
     // Graceful Shutdown
@@ -88,7 +89,7 @@ const startServer = async () => {
     const shutdown = async (signal: string) => {
       if (isShuttingDown) return;
       isShuttingDown = true;
-      console.log(`\n[Contest Service] Received ${signal}. Initiating graceful shutdown...`);
+      logger.info(`\n[Contest Service] Received ${signal}. Initiating graceful shutdown...`);
 
       try {
         // Step 1: Stop cron & socket, and close HTTP server
@@ -96,8 +97,8 @@ const startServer = async () => {
         io.close();
         await new Promise<void>((resolve) => {
           httpServer.close((err) => {
-            if (err) console.warn('[Contest Service] HTTP server close notice:', err.message);
-            console.log('[Contest Service] 1. HTTP server closed.');
+            if (err) logger.warn({ err }, `[Contest Service] HTTP server close notice: ${err.message}`);
+            logger.info('[Contest Service] 1. HTTP server closed.');
             resolve();
           });
         });
@@ -105,23 +106,23 @@ const startServer = async () => {
         // Step 2: Disconnect MongoDB
         try {
           await disconnectDB();
-          console.log('[Contest Service] 2. MongoDB disconnected.');
+          logger.info('[Contest Service] 2. MongoDB disconnected.');
         } catch (dbErr: any) {
-          console.warn('[Contest Service] MongoDB disconnect notice:', dbErr.message);
+          logger.warn({ err: dbErr }, `[Contest Service] MongoDB disconnect notice: ${dbErr.message}`);
         }
 
         // Step 3: Disconnect Redis
         try {
           await redisClient.quit();
-          console.log('[Contest Service] 3. Redis disconnected.');
+          logger.info('[Contest Service] 3. Redis disconnected.');
         } catch (redisErr: any) {
-          console.warn('[Contest Service] Redis disconnect notice:', redisErr.message);
+          logger.warn({ err: redisErr }, `[Contest Service] Redis disconnect notice: ${redisErr.message}`);
         }
 
-        console.log('[Contest Service] Graceful shutdown completed. Exiting code 0.');
+        logger.info('[Contest Service] Graceful shutdown completed. Exiting code 0.');
         process.exit(0);
       } catch (err: any) {
-        console.error('[Contest Service] Error during shutdown:', err);
+        logger.error({ err }, '[Contest Service] Error during shutdown: ' + (err?.message || err));
         process.exit(1);
       }
     };
@@ -129,7 +130,7 @@ const startServer = async () => {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error: any) {
-    console.error('[Contest Service] Fatal startup error:', error);
+    logger.error({ err: error }, '[Contest Service] Fatal startup error: ' + (error?.message || error));
     process.exit(1);
   }
 };

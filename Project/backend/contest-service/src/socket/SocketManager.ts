@@ -2,6 +2,7 @@ import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User';
+import { logger } from '../logger';
 
 export interface AuthenticatedSocket extends Socket {
   data: {
@@ -79,7 +80,7 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
   io.on('connection', (socket: AuthenticatedSocket) => {
     const displayName = socket.data.username || 'Guest';
     const userTag = socket.data.userId ? `(${socket.data.userId})` : '[guest]';
-    console.log(`[Socket] Client connected: socketId=${socket.id}, user=${displayName} ${userTag}`);
+    logger.info(`[Socket] Client connected: socketId=${socket.id}, user=${displayName} ${userTag}`);
 
     // Guest sockets cannot emit scoring events
     socket.use(([event], next) => {
@@ -93,7 +94,7 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
     socket.on('join:contest', (contestId: string) => {
       const room = `contest:${contestId}`;
       socket.join(room);
-      console.log(`[Socket] User ${displayName} joined room: ${room}`);
+      logger.info(`[Socket] User ${displayName} joined room: ${room}`);
       socket.emit('joined:contest', { contestId, room });
     });
 
@@ -101,12 +102,12 @@ export const initSocketServer = (httpServer: HttpServer): SocketIOServer => {
     socket.on('leave:contest', (contestId: string) => {
       const room = `contest:${contestId}`;
       socket.leave(room);
-      console.log(`[Socket] User ${displayName} left room: ${room}`);
+      logger.info(`[Socket] User ${displayName} left room: ${room}`);
       socket.emit('left:contest', { contestId, room });
     });
 
     socket.on('disconnect', (reason) => {
-      console.log(`[Socket] Client disconnected: socketId=${socket.id}, reason=${reason}`);
+      logger.info(`[Socket] Client disconnected: socketId=${socket.id}, reason=${reason}`);
     });
   });
 
@@ -130,7 +131,7 @@ export const emitToContest = (contestId: string, event: string, data: any): void
   if (!io) return;
   const room = `contest:${contestId}`;
   io.to(room).emit(event, data);
-  console.log(`[Socket Broadcast] Emitted '${event}' to ${room}`);
+  logger.info(`[Socket Broadcast] Emitted '${event}' to ${room}`);
 };
 
 /**

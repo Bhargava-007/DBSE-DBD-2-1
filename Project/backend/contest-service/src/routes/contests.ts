@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { Contest } from '../models/Contest';
 import { authenticate, authorize, optionalAuthenticate, AuthRequest } from '../middleware/auth';
 import { leaderboardService } from '../leaderboard/LeaderboardService';
+import { logger } from '../logger';
 
 const router = Router();
 
@@ -36,7 +37,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
       data: contests,
     });
   } catch (error: any) {
-    console.error('[Contest Service] List error:', error);
+    logger.error({ err: error }, '[Contest Service] List error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve contests.',
@@ -83,7 +84,7 @@ router.get('/:id', optionalAuthenticate, async (req: AuthRequest, res: Response)
       },
     });
   } catch (error: any) {
-    console.error('[Contest Service] Detail error:', error);
+    logger.error({ err: error }, '[Contest Service] Detail error: ' + (error?.message || error));
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve contest details.',
@@ -101,7 +102,17 @@ router.post(
   authorize('admin', 'setter'),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-      const { title, slug, description, startTime, endTime, durationMinutes, problemIds, problems, scoringMode, bannerBadge } = req.body;
+      const {
+        title,
+        description,
+        slug,
+        startTime,
+        endTime,
+        durationMinutes,
+        problemIds,
+        scoringMode,
+        bannerBadge,
+      } = req.body;
 
       if (!title || !startTime || !endTime) {
         res.status(400).json({
@@ -131,7 +142,7 @@ router.post(
 
       const rawProblemIds = (problemIds && problemIds.length > 0)
         ? problemIds
-        : (problems || []).map((p: any) => (typeof p === 'string' ? p : p._id || p.id)).filter(Boolean);
+        : (req.body.problems || []).map((p: any) => (typeof p === 'string' ? p : p._id || p.id)).filter(Boolean);
 
       const now = new Date();
       let status: 'upcoming' | 'live' | 'ended' = 'upcoming';
@@ -162,7 +173,7 @@ router.post(
         message: 'Contest created successfully.',
       });
     } catch (error: any) {
-      console.error('[Contest Service] Create error:', error);
+      logger.error({ err: error }, '[Contest Service] Create error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to create contest.',
@@ -199,7 +210,7 @@ router.put(
         message: 'Contest updated successfully.',
       });
     } catch (error: any) {
-      console.error('[Contest Service] Update error:', error);
+      logger.error({ err: error }, '[Contest Service] Update error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to update contest.',
@@ -249,7 +260,7 @@ router.post(
         },
       });
     } catch (error: any) {
-      console.error('[Contest Service] Register error:', error);
+      logger.error({ err: error }, '[Contest Service] Register error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to register for contest.',
@@ -277,7 +288,7 @@ router.get(
         data: leaderboardData,
       });
     } catch (error: any) {
-      console.error('[Contest Service] Leaderboard error:', error);
+      logger.error({ err: error }, '[Contest Service] Leaderboard error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: 'Failed to fetch leaderboard.',
@@ -303,7 +314,7 @@ router.get(
         data: rankInfo,
       });
     } catch (error: any) {
-      console.error('[Contest Service] My Rank error:', error);
+      logger.error({ err: error }, '[Contest Service] My Rank error: ' + (error?.message || error));
       res.status(500).json({
         success: false,
         error: "Failed to fetch user's rank.",

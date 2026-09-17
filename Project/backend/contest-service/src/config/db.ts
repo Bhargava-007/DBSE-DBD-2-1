@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { logger } from '../logger';
 
 export const connectDB = async (): Promise<void> => {
   const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/algoflow';
@@ -8,17 +9,17 @@ export const connectDB = async (): Promise<void> => {
     await mongoose.connect(mongoUri, {
       serverSelectionTimeoutMS: 5000,
     });
-    console.log(`[Contest DB] Connected to MongoDB successfully at ${mongoose.connection.host}/${mongoose.connection.name}`);
+    logger.info(`[Contest DB] Connected to MongoDB successfully at ${mongoose.connection.host}/${mongoose.connection.name}`);
   } catch (error: any) {
-    console.warn(`[Contest DB] MongoDB connection warning: ${error.message}`);
+    logger.warn({ err: error }, `[Contest DB] MongoDB connection warning: ${error.message}`);
   }
 
   mongoose.connection.on('disconnected', () => {
-    console.warn('[Contest DB] MongoDB disconnected.');
+    logger.warn('[Contest DB] MongoDB disconnected.');
   });
 };
 
 export const disconnectDB = async (): Promise<void> => {
   await mongoose.disconnect();
-  console.log('[Contest DB] MongoDB disconnected cleanly.');
+  logger.info('[Contest DB] MongoDB disconnected cleanly.');
 };

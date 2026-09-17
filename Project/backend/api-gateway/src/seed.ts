@@ -7,24 +7,25 @@ import { User } from './models/User';
 import { Problem } from './models/Problem';
 import { Contest } from './models/Contest';
 import { Submission } from './models/Submission';
+import { logger } from './logger';
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/algoflow';
 
 async function seedDatabase() {
   try {
-    console.log(`[Seed] Connecting to MongoDB at ${MONGO_URI}...`);
+    logger.info(`[Seed] Connecting to MongoDB at ${MONGO_URI}...`);
     await mongoose.connect(MONGO_URI);
-    console.log('[Seed] Connected to MongoDB.');
+    logger.info('[Seed] Connected to MongoDB.');
 
     // 1. Clear existing collections
-    console.log('[Seed] Clearing existing collections...');
+    logger.info('[Seed] Clearing existing collections...');
     await Promise.all([
       User.deleteMany({}),
       Problem.deleteMany({}),
       Contest.deleteMany({}),
       Submission.deleteMany({}),
     ]);
-    console.log('[Seed] Collections cleared.');
+    logger.info('[Seed] Collections cleared.');
 
     // 2. Hash passwords
     const salt = await bcrypt.genSalt(10);
@@ -33,7 +34,7 @@ async function seedDatabase() {
     const userPasswordHash = await bcrypt.hash('User@123', salt);
 
     // 3. Create Users
-    console.log('[Seed] Creating users...');
+    logger.info('[Seed] Creating users...');
     const [adminUser, setterUser, regularUser] = await User.create([
       {
         username: 'admin',
@@ -75,10 +76,10 @@ async function seedDatabase() {
         institution: 'MIT',
       },
     ]);
-    console.log(`[Seed] Created ${[adminUser, setterUser, regularUser].length} users.`);
+    logger.info(`[Seed] Created ${[adminUser, setterUser, regularUser].length} users.`);
 
     // 4. Create 5 Problems
-    console.log('[Seed] Creating problems...');
+    logger.info('[Seed] Creating problems...');
     const problemsData = [
       {
         title: 'Two Sum',
@@ -792,10 +793,10 @@ main();`,
     ];
 
     const createdProblems = await Problem.insertMany(problemsData);
-    console.log(`[Seed] Created ${createdProblems.length} problems.`);
+    logger.info(`[Seed] Created ${createdProblems.length} problems.`);
 
     // 5. Create 2 Contests
-    console.log('[Seed] Creating contests...');
+    logger.info('[Seed] Creating contests...');
     const now = Date.now();
     const liveStartTime = new Date(now - 1 * 60 * 60 * 1000); // 1 hour ago
     const liveEndTime = new Date(now + 5 * 60 * 60 * 1000); // 5 hours from now
@@ -839,15 +840,15 @@ main();`,
     ];
 
     const createdContests = await Contest.insertMany(contestsData);
-    console.log(`[Seed] Created ${createdContests.length} contests.`);
+    logger.info(`[Seed] Created ${createdContests.length} contests.`);
 
-    console.log('Seed complete.');
+    logger.info('Seed complete.');
   } catch (error) {
-    console.error('[Seed] Error during seeding:', error);
+    logger.error({ err: error }, '[Seed] Error during seeding: ' + (error as any)?.message);
     process.exit(1);
   } finally {
     await mongoose.disconnect();
-    console.log('[Seed] Disconnected from MongoDB.');
+    logger.info('[Seed] Disconnected from MongoDB.');
   }
 }
 

@@ -6,6 +6,7 @@ import cors from 'cors';
 import { connectDB, disconnectDB } from './config/db';
 import { connectRedis, redisClient } from './config/redis';
 import plagiarismRouter from './routes/plagiarism';
+import { logger } from './logger';
 
 const app = express();
 const PORT = process.env.PORT || 4002;
@@ -43,7 +44,7 @@ app.use((req: Request, res: Response) => {
 
 // Global Error Handler
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('[Plagiarism Service Error]', err);
+  logger.error({ err }, '[Plagiarism Service Error]');
   res.status(err.statusCode || 500).json({
     success: false,
     error: err.message || 'Internal Server Error',
@@ -52,30 +53,30 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 const startServer = async () => {
   try {
-    console.log('====================================================');
-    console.log('🔍 AlgoFlow Plagiarism Detection & Fingerprinting Service');
-    console.log('====================================================');
+    logger.info('====================================================');
+    logger.info('🔍 AlgoFlow Plagiarism Detection & Fingerprinting Service');
+    logger.info('====================================================');
 
     await connectDB();
     await connectRedis();
 
     const server = app.listen(PORT, () => {
-      console.log(`🚀 Plagiarism Service listening on http://localhost:${PORT}`);
-      console.log('====================================================');
+      logger.info(`🚀 Plagiarism Service listening on http://localhost:${PORT}`);
+      logger.info('====================================================');
     });
 
     let isShuttingDown = false;
     const shutdown = async (signal: string) => {
       if (isShuttingDown) return;
       isShuttingDown = true;
-      console.log(`\n[Plagiarism Service] Received ${signal}. Initiating graceful shutdown...`);
+      logger.info(`\n[Plagiarism Service] Received ${signal}. Initiating graceful shutdown...`);
 
       try {
         // Step 1: Close HTTP server
         await new Promise<void>((resolve) => {
           server.close((err) => {
-            if (err) console.warn('[Plagiarism Service] HTTP server close notice:', err.message);
-            console.log('[Plagiarism Service] 1. HTTP server closed.');
+            if (err) logger.warn({ err }, `[Plagiarism Service] HTTP server close notice: ${err.message}`);
+            logger.info('[Plagiarism Service] 1. HTTP server closed.');
             resolve();
           });
         });
@@ -83,23 +84,23 @@ const startServer = async () => {
         // Step 2: Disconnect MongoDB
         try {
           await disconnectDB();
-          console.log('[Plagiarism Service] 2. MongoDB disconnected.');
+          logger.info('[Plagiarism Service] 2. MongoDB disconnected.');
         } catch (dbErr: any) {
-          console.warn('[Plagiarism Service] MongoDB disconnect notice:', dbErr.message);
+          logger.warn({ err: dbErr }, `[Plagiarism Service] MongoDB disconnect notice: ${dbErr.message}`);
         }
 
         // Step 3: Disconnect Redis
         try {
           await redisClient.quit();
-          console.log('[Plagiarism Service] 3. Redis disconnected.');
+          logger.info('[Plagiarism Service] 3. Redis disconnected.');
         } catch (redisErr: any) {
-          console.warn('[Plagiarism Service] Redis disconnect notice:', redisErr.message);
+          logger.warn({ err: redisErr }, `[Plagiarism Service] Redis disconnect notice: ${redisErr.message}`);
         }
 
-        console.log('[Plagiarism Service] Graceful shutdown completed. Exiting code 0.');
+        logger.info('[Plagiarism Service] Graceful shutdown completed. Exiting code 0.');
         process.exit(0);
       } catch (err: any) {
-        console.error('[Plagiarism Service] Error during shutdown:', err);
+        logger.error({ err }, '[Plagiarism Service] Error during shutdown: ' + (err?.message || err));
         process.exit(1);
       }
     };
@@ -107,7 +108,7 @@ const startServer = async () => {
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM'));
   } catch (error: any) {
-    console.error('[Plagiarism Service] Startup error:', error);
+    logger.error({ err: error }, '[Plagiarism Service] Startup error: ' + (error?.message || error));
     process.exit(1);
   }
 };

@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import { logger } from '../logger';
 
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
@@ -12,11 +13,11 @@ export const redisClient = new Redis(redisUrl, {
 });
 
 redisClient.on('connect', () => {
-  console.log('[Contest Redis] Connected to Redis server successfully.');
+  logger.info('[Contest Redis] Connected to Redis server successfully.');
 });
 
 redisClient.on('error', (err) => {
-  console.warn('[Contest Redis] Redis connection notice:', err.message);
+  logger.warn({ err }, '[Contest Redis] Redis connection notice: ' + err.message);
 });
 
 export const connectRedis = async (): Promise<void> => {
@@ -25,6 +26,6 @@ export const connectRedis = async (): Promise<void> => {
       await redisClient.connect();
     }
   } catch (error: any) {
-    console.warn(`[Contest Redis] Redis not reachable at ${redisUrl}: ${error.message}`);
+    logger.warn({ err: error }, `[Contest Redis] Redis not reachable at ${redisUrl}: ${error.message}`);
   }
 };

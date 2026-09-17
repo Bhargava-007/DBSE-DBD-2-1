@@ -5,6 +5,7 @@ import { Submission } from '../models/Submission';
 import { Problem } from '../models/Problem';
 import { authenticate, authorize, optionalAuthenticate, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { logger } from '../logger';
 
 const router = Router();
 
@@ -60,7 +61,7 @@ router.get('/', async (_req: AuthRequest, res: Response): Promise<void> => {
       data: updatedContests,
     });
   } catch (error: any) {
-    console.error('[Contests Route] List Error:', error);
+    logger.error({ err: error },'[Contests Route] List Error:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to retrieve contests.',
@@ -115,7 +116,7 @@ router.get(
         data: contestObj,
       });
     } catch (error: any) {
-      console.error('[Contests Route] Detail Error:', error);
+      logger.error({ err: error },'[Contests Route] Detail Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to retrieve contest details.',
@@ -186,7 +187,7 @@ router.post(
         message: 'Contest created successfully.',
       });
     } catch (error: any) {
-      console.error('[Contests Route] Create Error:', error);
+      logger.error({ err: error },'[Contests Route] Create Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to create contest.',
@@ -239,7 +240,7 @@ router.post(
         },
       });
     } catch (error: any) {
-      console.error('[Contests Route] Register Error:', error);
+      logger.error({ err: error },'[Contests Route] Register Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to register for contest.',
@@ -343,7 +344,7 @@ router.get(
         },
       });
     } catch (error: any) {
-      console.error('[Contests Route] Leaderboard Error:', error);
+      logger.error({ err: error },'[Contests Route] Leaderboard Error:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to generate contest leaderboard.',
