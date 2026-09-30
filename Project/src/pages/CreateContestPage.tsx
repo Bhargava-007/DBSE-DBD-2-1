@@ -99,8 +99,8 @@ export const CreateContestPage: React.FC = () => {
       try {
         const res = await getProblems({ limit: 100 });
         setAvailableProblems(res.problems);
-      } catch (err: any) {
-        console.error('Failed to load problems for contest creation:', err);
+      } catch {
+        // Handled silently with empty available list
       } finally {
         setLoadingProblems(false);
       }

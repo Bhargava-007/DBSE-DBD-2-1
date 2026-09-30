@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
 import { VerdictBadge } from '../common/VerdictBadge';
@@ -175,14 +175,14 @@ export const SubmissionsView: React.FC = () => {
     if (!inspectSubmission) return [];
     
     const fallbackProblem: Problem = {
-      id: inspectSubmission.problemId || 'prob-generic',
+      id: inspectSubmission.problemId || '',
       title: inspectSubmission.problemTitle || 'Algorithmic Problem',
-      slug: (activeProblem?.slug || inspectSubmission.problemId || 'two-sum').toLowerCase(),
+      slug: (activeProblem?.slug || inspectSubmission.problemId || '').toLowerCase(),
       difficulty: inspectSubmission.problemDifficulty || 'Medium',
-      acceptanceRate: 55,
-      timeLimitMs: 2000,
-      memoryLimitMb: 256,
-      tags: ['Algorithms'],
+      acceptanceRate: activeProblem?.acceptanceRate || 0,
+      timeLimitMs: activeProblem?.timeLimitMs || 2000,
+      memoryLimitMb: activeProblem?.memoryLimitMb || 256,
+      tags: activeProblem?.tags || [],
       description: '',
       constraints: [],
       sampleTestCases: [],
@@ -238,10 +238,13 @@ export const SubmissionsView: React.FC = () => {
     setInspectorTab('inspect');
     setSelectedTestCaseIdx(0);
     setSelectedPrevSubId('');
-    setTimeout(() => {
-      inspectRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 50);
   }, []);
+
+  useEffect(() => {
+    if (inspectSubmission && inspectRef.current) {
+      inspectRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [inspectSubmission]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 page-fade text-[var(--bone)]">

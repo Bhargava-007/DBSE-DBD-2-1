@@ -172,8 +172,12 @@ export const UserDashboard: React.FC = () => {
             {/* Main Progress Bar */}
             <div className="w-full h-[6px] rounded-full bg-[var(--bg-active)] overflow-hidden">
               <div 
-                className="h-full bg-[var(--accent)] transition-all duration-300"
-                style={{ width: `${(realSolvedCount / (problems.length || 1)) * 100}%` }}
+                className="h-full rounded-full transition-all duration-300"
+                style={{ 
+                  width: `${(realSolvedCount / (problems.length || 1)) * 100}%`,
+                  minWidth: '2px',
+                  backgroundColor: realSolvedCount > 0 ? 'var(--accent)' : 'var(--border)',
+                }}
               />
             </div>
           </div>
@@ -193,8 +197,12 @@ export const UserDashboard: React.FC = () => {
               </div>
               <div className="w-full h-[4px] rounded-full bg-[var(--bg-active)] overflow-hidden">
                 <div 
-                  className="h-full bg-[var(--green)] rounded-full"
-                  style={{ width: `${(easySolved / easyTotal) * 100}%` }}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${(easySolved / (easyTotal || 1)) * 100}%`,
+                    minWidth: '2px',
+                    backgroundColor: easySolved > 0 ? 'var(--green)' : 'var(--border)',
+                  }}
                 />
               </div>
             </div>
@@ -212,8 +220,12 @@ export const UserDashboard: React.FC = () => {
               </div>
               <div className="w-full h-[4px] rounded-full bg-[var(--bg-active)] overflow-hidden">
                 <div 
-                  className="h-full bg-[var(--amber)] rounded-full"
-                  style={{ width: `${(mediumSolved / mediumTotal) * 100}%` }}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${(mediumSolved / (mediumTotal || 1)) * 100}%`,
+                    minWidth: '2px',
+                    backgroundColor: mediumSolved > 0 ? 'var(--amber)' : 'var(--border)',
+                  }}
                 />
               </div>
             </div>
@@ -231,8 +243,12 @@ export const UserDashboard: React.FC = () => {
               </div>
               <div className="w-full h-[4px] rounded-full bg-[var(--bg-active)] overflow-hidden">
                 <div 
-                  className="h-full bg-[var(--red)] rounded-full"
-                  style={{ width: `${(hardSolved / hardTotal) * 100}%` }}
+                  className="h-full rounded-full transition-all duration-300"
+                  style={{ 
+                    width: `${(hardSolved / (hardTotal || 1)) * 100}%`,
+                    minWidth: '2px',
+                    backgroundColor: hardSolved > 0 ? 'var(--red)' : 'var(--border)',
+                  }}
                 />
               </div>
             </div>

@@ -21,16 +21,9 @@ export const getContestSocket = (): Socket => {
       reconnectionDelay: 1000,
     });
 
-    socket.on('connect', () => {
-      console.log(`[WebSocket] Connected to Contest Service at ${CONTEST_WS_URL}`);
-    });
-
-    socket.on('connect_error', (err) => {
-      console.warn(`[WebSocket] Connection notice: ${err.message}`);
-    });
-
-    socket.on('disconnect', (reason) => {
-      console.log(`[WebSocket] Disconnected from Contest Service: ${reason}`);
+    // Silence raw socket logging in production
+    socket.on('connect_error', () => {
+      // Reconnection attempts handled automatically by Socket.io client
     });
   }
 

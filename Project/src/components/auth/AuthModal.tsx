@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { useJudge } from '../../context/JudgeContext';
 import { Lock, Mail, User, X, ArrowRight, ShieldCheck } from 'lucide-react';
 interface DemoUser {
-  id: string;
+  label: string;
   username: string;
-  name: string;
+  password: string;
   role: 'admin' | 'setter' | 'user';
-  rating: number;
 }
 
 const DEMO_USERS: DemoUser[] = [
-  { id: 'usr_892144', username: 'alex_dev', name: 'Alex Chen', role: 'admin', rating: 1842 },
-  { id: 'usr_892145', username: 'sarah_k', name: 'Sarah Kim', role: 'setter', rating: 1910 },
-  { id: 'usr_892146', username: 'marcus_v', name: 'Marcus Vance', role: 'user', rating: 1725 },
+  { label: 'Admin', username: 'admin', password: 'Admin@123', role: 'admin' },
+  { label: 'Setter', username: 'setter', password: 'Setter@123', role: 'setter' },
+  { label: 'User', username: 'bhargava', password: 'User@123', role: 'user' },
 ];
 
 export const AuthModal: React.FC = () => {
@@ -61,31 +60,15 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async (user: typeof DEMO_USERS[0]) => {
+  const handleQuickLogin = async (user: DemoUser) => {
     setError('');
-
-    // Map mock quick-login user to real database demo credentials
-    const credentialsMap: Record<string, { username: string; password: string }> = {
-      alex_dev: { username: 'admin', password: 'Admin@123' },
-      sarah_k: { username: 'setter', password: 'Setter@123' },
-      marcus_v: { username: 'bhargava', password: 'User@123' },
-      admin: { username: 'admin', password: 'Admin@123' },
-      setter: { username: 'setter', password: 'Setter@123' },
-      bhargava: { username: 'bhargava', password: 'User@123' },
-    };
-
-    const creds =
-      credentialsMap[user.username] ||
-      (user.role === 'admin'
-        ? credentialsMap.admin
-        : user.role === 'setter'
-        ? credentialsMap.setter
-        : credentialsMap.bhargava);
-
+    setIsLoading(true);
     try {
-      await loginUser(creds.username, creds.password, rememberMe);
+      await loginUser(user.username, user.password, rememberMe);
     } catch (err: any) {
       setError(err.message || 'Quick login failed.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -237,12 +220,14 @@ export const AuthModal: React.FC = () => {
           <div className="grid grid-cols-3 gap-2">
             {DEMO_USERS.map(user => (
               <button
-                key={user.id}
+                key={user.username}
+                type="button"
                 onClick={() => handleQuickLogin(user)}
-                className="p-2 rounded-[var(--r-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-left transition-colors space-y-0.5"
+                disabled={isLoading}
+                className="p-2 rounded-[var(--r-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-left transition-colors space-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                <div className="text-[12px] font-medium text-[var(--text-1)] truncate">{user.name.split(' ')[0]}</div>
-                <div className="text-[11px] font-mono text-[var(--accent)]">{user.rating}</div>
+                <div className="text-[12px] font-medium text-[var(--text-1)] truncate">{user.label}</div>
+                <div className="text-[11px] font-mono text-[var(--text-3)] truncate">@{user.username}</div>
               </button>
             ))}
           </div>

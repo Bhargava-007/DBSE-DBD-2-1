@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { z } from 'zod';
 import { Problem, IProblem } from '../models/Problem';
+import { Submission } from '../models/Submission';
 import { authenticate, authorize, optionalAuthenticate, AuthRequest } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import logger from '../logger';
@@ -325,5 +326,61 @@ router.delete(
     }
   }
 );
+
+/**
+ * GET /api/problems/:id/stats
+ * Get percentile performance stats based on real submissions
+ */
+router.get('/:id/stats', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const executionTime = req.query.executionTime ? Number(req.query.executionTime) : undefined;
+    const memoryKb = req.query.memoryKb ? Number(req.query.memoryKb) : undefined;
+
+    const problem = await Problem.findById(id);
+    if (!problem) {
+      res.status(404).json({ success: false, error: 'Problem not found.' });
+      return;
+    }
+
+    const totalAccepted = await Submission.countDocuments({
+      problemId: id,
+      verdict: 'Accepted',
+    });
+
+    let fasterThanPercent: number | null = null;
+    let lessThanMemoryPercent: number | null = null;
+
+    if (totalAccepted > 0 && executionTime !== undefined) {
+      const slowerCount = await Submission.countDocuments({
+        problemId: id,
+        verdict: 'Accepted',
+        executionTimeMs: { $gt: executionTime },
+      });
+      fasterThanPercent = Math.max(1, Math.min(99, Math.round((slowerCount / totalAccepted) * 100)));
+    }
+
+    if (totalAccepted > 0 && memoryKb !== undefined) {
+      const moreMemoryCount = await Submission.countDocuments({
+        problemId: id,
+        verdict: 'Accepted',
+        memoryKb: { $gt: memoryKb },
+      });
+      lessThanMemoryPercent = Math.max(1, Math.min(99, Math.round((moreMemoryCount / totalAccepted) * 100)));
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalAccepted,
+        fasterThanPercent,
+        lessThanMemoryPercent,
+      },
+    });
+  } catch (error: any) {
+    logger.error({ error }, '[Problems Route] Stats Error');
+    res.status(500).json({ success: false, error: 'Failed to compute problem stats.' });
+  }
+});
 
 export default router;

@@ -67,11 +67,9 @@ export const Navbar: React.FC = () => {
                   ? location.pathname === '/' 
                   : item.path === '/problems'
                   ? location.pathname.startsWith('/problems')
-                  : item.path === '/contests'
-                  ? location.pathname === '/contests'
-                  : item.path === '/leaderboard'
-                  ? (location.pathname === '/leaderboard' || location.pathname.startsWith('/contests/'))
-                  : location.pathname.startsWith(item.path);
+                  : item.path === '/admin'
+                  ? location.pathname.startsWith('/admin')
+                  : location.pathname === item.path;
 
               return (
                 <button
@@ -96,19 +94,24 @@ export const Navbar: React.FC = () => {
         {/* Right side: Search pill, Theme toggle, User */}
         <div className="flex items-center gap-3">
           
-          {/* 180px search pill with ⌘K badge */}
-          <button
-            onClick={() => setIsCommandPaletteOpen(true)}
-            className="w-[180px] h-[30px] flex items-center justify-between px-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] text-xs transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Search className="w-3.5 h-3.5 text-[var(--text-3)]" />
-              <span className="text-[12px] text-[var(--text-3)]">Search...</span>
-            </div>
-            <kbd className="inline-flex items-center font-mono text-[10px] px-1 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--text-3)]">
-              ⌘K
-            </kbd>
-          </button>
+          {/* 180px search pill with dynamic OS shortcut badge */}
+          {(() => {
+            const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
+            return (
+              <button
+                onClick={() => setIsCommandPaletteOpen(true)}
+                className="w-[180px] h-[30px] flex items-center justify-between px-2.5 rounded-[var(--r-sm)] bg-[var(--ash)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-[var(--text-3)] hover:text-[var(--text-2)] text-xs transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Search className="w-3.5 h-3.5 text-[var(--text-3)]" />
+                  <span className="text-[12px] text-[var(--text-3)]">Search...</span>
+                </div>
+                <kbd className="inline-flex items-center font-mono text-[10px] px-1 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--text-3)]">
+                  {isMac ? '⌘K' : 'Ctrl+K'}
+                </kbd>
+              </button>
+            );
+          })()}
 
           {/* Theme Toggle Button */}
           <button

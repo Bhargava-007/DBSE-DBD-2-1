@@ -173,7 +173,6 @@ export const EditProblemPage: React.FC = () => {
           });
         }
       } catch (err: any) {
-        console.error('Failed to load problem details:', err);
         setLoadError(
           err.response?.data?.error ||
           err.response?.data?.message ||

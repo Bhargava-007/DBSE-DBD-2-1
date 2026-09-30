@@ -2,6 +2,15 @@ import mongoose, { Document, Schema, Types } from 'mongoose';
 
 export type ContestStatus = 'upcoming' | 'live' | 'ended';
 
+export interface IFinalRanking {
+  rank: number;
+  userId: Types.ObjectId;
+  username: string;
+  score: number;
+  solvedCount: number;
+  penaltyMinutes: number;
+}
+
 export interface IContest extends Document {
   _id: Types.ObjectId;
   title: string;
@@ -17,9 +26,22 @@ export interface IContest extends Document {
   scoringMode?: string;
   bannerBadge?: string;
   editorial?: string;
+  finalRankings: IFinalRanking[];
   createdAt: Date;
   updatedAt: Date;
 }
+
+const FinalRankingSchema = new Schema<IFinalRanking>(
+  {
+    rank: { type: Number, required: true },
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    username: { type: String, required: true },
+    score: { type: Number, required: true },
+    solvedCount: { type: Number, required: true },
+    penaltyMinutes: { type: Number, required: true },
+  },
+  { _id: false }
+);
 
 const ContestSchema = new Schema<IContest>(
   {
@@ -89,6 +111,7 @@ const ContestSchema = new Schema<IContest>(
       type: String,
       default: '',
     },
+    finalRankings: [FinalRankingSchema],
   },
   {
     timestamps: true,

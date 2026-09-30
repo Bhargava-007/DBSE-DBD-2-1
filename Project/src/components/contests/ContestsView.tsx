@@ -68,11 +68,19 @@ export const ContestsView: React.FC = () => {
         </div>
 
         <button
-          onClick={() => navigate('/contests/cnt-411')}
+          onClick={() => {
+            if (liveContests.length > 0) {
+              navigate(`/contests/${liveContests[0].id}`);
+            } else if (contests.length > 0) {
+              navigate(`/contests/${contests[0].id}`);
+            } else {
+              navigate('/leaderboard');
+            }
+          }}
           className="btn-secondary self-start sm:self-auto cursor-pointer font-mono text-xs flex items-center gap-2"
         >
           <Trophy className="w-3.5 h-3.5 text-[var(--verdigris)]" />
-          <span>Global Leaderboard</span>
+          <span>Tournament Standings</span>
           <ArrowRight className="w-3.5 h-3.5 text-[var(--text-3)]" />
         </button>
       </div>

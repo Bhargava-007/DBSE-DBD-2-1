@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
 import type { Difficulty } from '../../types/judge';
 import { DifficultyBadge } from '../common/DifficultyBadge';
@@ -13,7 +13,8 @@ import {
   Plus,
   Inbox,
   Filter,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
 
 export const ProblemCatalog: React.FC = () => {
@@ -22,7 +23,9 @@ export const ProblemCatalog: React.FC = () => {
     isProblemSolved 
   } = useJudge();
   const navigate = useNavigate();
+  const location = useLocation();
 
+  const [bannerError, setBannerError] = useState<string | null>(() => (location.state as { error?: string })?.error || null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<'All' | Difficulty>('All');
@@ -105,6 +108,23 @@ export const ProblemCatalog: React.FC = () => {
           <span>Create Problem</span>
         </button>
       </div>
+
+      {/* Dismissible Error Banner */}
+      {bannerError && (
+        <div className="flex items-center justify-between p-3.5 rounded-[var(--r-md)] bg-[var(--red-dim)] border border-[var(--red)]/30 text-xs text-[var(--red)] font-medium">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{bannerError}</span>
+          </div>
+          <button 
+            onClick={() => setBannerError(null)}
+            className="p-1 text-[var(--red)] hover:opacity-75 transition-opacity cursor-pointer"
+            title="Dismiss"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Sleek Search + Filters Toolbar */}
       <div className="card p-4 space-y-3.5 bg-[var(--carbon)] border-[var(--border)]">

@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Problem, TestCaseResult, TestCase, Submission } from '../../types/judge';
 import { VerdictBadge } from '../common/VerdictBadge';
+import { apiClient } from '../../api/client';
 import { 
   Clock, 
   Cpu, 
@@ -38,6 +39,7 @@ export const ConsoleRunner: React.FC<Props> = ({
 }) => {
   // activeTab: -2 = Verdict, -1 = Custom Input, 0..N = Sample Test Case index
   const [activeTab, setActiveTab] = useState<number>(0);
+  const [realStats, setRealStats] = useState<{ fasterThanPercent: number | null; lessThanMemoryPercent: number | null } | null>(null);
 
   // Auto-switch to verdict tab when submission starts or arrives
   useEffect(() => {
@@ -54,28 +56,31 @@ export const ConsoleRunner: React.FC<Props> = ({
     }
   }, [results]);
 
-  // Compute realistic performance percentiles based on actual execution time and memory
-  const performanceStats = useMemo(() => {
-    if (!lastSubmission || lastSubmission.verdict !== 'Accepted') return null;
-    const timeMs = lastSubmission.executionTimeMs;
-    const memMb = lastSubmission.memoryKb ? lastSubmission.memoryKb / 1024 : 16.4;
+  // Fetch real performance percentiles based on actual database submissions
+  useEffect(() => {
+    if (!lastSubmission || lastSubmission.verdict !== 'Accepted') {
+      setRealStats(null);
+      return;
+    }
 
-    let speedPercentile = 92.4;
-    if (timeMs <= 5) speedPercentile = 99.4;
-    else if (timeMs <= 20) speedPercentile = 97.1;
-    else if (timeMs <= 50) speedPercentile = 92.8;
-    else if (timeMs <= 100) speedPercentile = 84.6;
-    else if (timeMs <= 200) speedPercentile = 71.3;
-    else speedPercentile = Math.max(18.5, Math.min(99, +(100 - timeMs / 15).toFixed(1)));
+    const fetchStats = async () => {
+      try {
+        const timeMs = lastSubmission.executionTimeMs || 0;
+        const memKb = lastSubmission.memoryKb || 0;
+        const res = await apiClient.get(`/problems/${problem.id}/stats?executionTime=${timeMs}&memoryKb=${memKb}`);
+        if (res.data?.success && res.data?.data) {
+          setRealStats({
+            fasterThanPercent: res.data.data.fasterThanPercent,
+            lessThanMemoryPercent: res.data.data.lessThanMemoryPercent,
+          });
+        }
+      } catch {
+        setRealStats(null);
+      }
+    };
 
-    let memoryPercentile = 88.6;
-    if (memMb <= 15) memoryPercentile = 96.2;
-    else if (memMb <= 30) memoryPercentile = 89.4;
-    else if (memMb <= 64) memoryPercentile = 77.1;
-    else memoryPercentile = 63.5;
-
-    return { speedPercentile, memoryPercentile };
-  }, [lastSubmission]);
+    fetchStats();
+  }, [lastSubmission, problem.id]);
 
   if (!isOpen) return null;
 
@@ -239,55 +244,59 @@ export const ConsoleRunner: React.FC<Props> = ({
                 </div>
 
                 {/* Performance Comparison Percentile Grid ("Faster Than X%") */}
-                {performanceStats && (
+                {realStats && (realStats.fasterThanPercent !== null || realStats.lessThanMemoryPercent !== null) && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
                     {/* Runtime Card */}
-                    <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[var(--text-3)] font-mono flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-[var(--verdigris)]" /> Runtime
-                        </span>
-                        <span className="font-bold text-[var(--bone)] font-mono text-sm">
-                          {lastSubmission.executionTimeMs} ms
-                        </span>
-                      </div>
+                    {realStats.fasterThanPercent !== null && (
+                      <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[var(--text-3)] font-mono flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-[var(--verdigris)]" /> Runtime
+                          </span>
+                          <span className="font-bold text-[var(--bone)] font-mono text-sm">
+                            {lastSubmission.executionTimeMs} ms
+                          </span>
+                        </div>
 
-                      <div className="text-xs text-[var(--text-2)] font-sans">
-                        Faster than <strong className="text-[var(--verdigris)] font-semibold font-mono">{performanceStats.speedPercentile}%</strong> of {lastSubmission.language.toUpperCase()} submissions.
-                      </div>
+                        <div className="text-xs text-[var(--text-2)] font-sans">
+                          Faster than <strong className="text-[var(--verdigris)] font-semibold font-mono">{realStats.fasterThanPercent}%</strong> of submissions.
+                        </div>
 
-                      {/* Visual speed progress bar */}
-                      <div className="w-full h-1.5 rounded-full bg-[var(--carbon)] overflow-hidden">
-                        <div 
-                          className="h-full bg-[var(--verdigris)] rounded-full transition-all duration-500"
-                          style={{ width: `${performanceStats.speedPercentile}%` }}
-                        />
+                        {/* Visual speed progress bar */}
+                        <div className="w-full h-1.5 rounded-full bg-[var(--carbon)] overflow-hidden">
+                          <div 
+                            className="h-full bg-[var(--verdigris)] rounded-full transition-all duration-500"
+                            style={{ width: `${realStats.fasterThanPercent}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Memory Card */}
-                    <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[var(--text-3)] font-mono flex items-center gap-1.5">
-                          <Cpu className="w-3.5 h-3.5 text-[var(--verdigris)]" /> Memory
-                        </span>
-                        <span className="font-bold text-[var(--bone)] font-mono text-sm">
-                          {(lastSubmission.memoryKb / 1024).toFixed(1)} MB
-                        </span>
-                      </div>
+                    {realStats.lessThanMemoryPercent !== null && (
+                      <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[var(--text-3)] font-mono flex items-center gap-1.5">
+                            <Cpu className="w-3.5 h-3.5 text-[var(--verdigris)]" /> Memory
+                          </span>
+                          <span className="font-bold text-[var(--bone)] font-mono text-sm">
+                            {(lastSubmission.memoryKb / 1024).toFixed(1)} MB
+                          </span>
+                        </div>
 
-                      <div className="text-xs text-[var(--text-2)] font-sans">
-                        Beats <strong className="text-[var(--verdigris)] font-semibold font-mono">{performanceStats.memoryPercentile}%</strong> of memory profiles.
-                      </div>
+                        <div className="text-xs text-[var(--text-2)] font-sans">
+                          Beats <strong className="text-[var(--verdigris)] font-semibold font-mono">{realStats.lessThanMemoryPercent}%</strong> of memory profiles.
+                        </div>
 
-                      {/* Visual memory progress bar */}
-                      <div className="w-full h-1.5 rounded-full bg-[var(--carbon)] overflow-hidden">
-                        <div 
-                          className="h-full bg-[var(--verdigris)] rounded-full transition-all duration-500"
-                          style={{ width: `${performanceStats.memoryPercentile}%` }}
-                        />
+                        {/* Visual memory progress bar */}
+                        <div className="w-full h-1.5 rounded-full bg-[var(--carbon)] overflow-hidden">
+                          <div 
+                            className="h-full bg-[var(--verdigris)] rounded-full transition-all duration-500"
+                            style={{ width: `${realStats.lessThanMemoryPercent}%` }}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
 

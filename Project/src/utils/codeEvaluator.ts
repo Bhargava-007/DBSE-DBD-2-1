@@ -74,259 +74,6 @@ export function parseInput(rawInput: string): Record<string, any> {
 }
 
 /**
- * Problem-specific algorithmic solvers
- */
-
-function solveTwoSum(input: Record<string, any>): string {
-  let nums: number[] = [];
-  let target: number = 0;
-
-  if (input.nums && Array.isArray(input.nums)) {
-    nums = input.nums;
-    target = Number(input.target ?? 0);
-  } else if (input._rawNumbers) {
-    const raw = input._rawNumbers;
-    if (raw.length >= 3) {
-      const n = raw[0];
-      if (raw.length === n + 2) {
-        nums = raw.slice(1, n + 1);
-        target = raw[n + 1];
-      } else {
-        nums = raw.slice(0, raw.length - 1);
-        target = raw[raw.length - 1];
-      }
-    }
-  }
-
-  const map = new Map<number, number>();
-  for (let i = 0; i < nums.length; i++) {
-    const comp = target - nums[i];
-    if (map.has(comp)) {
-      return `[${map.get(comp)}, ${i}]`;
-    }
-    map.set(nums[i], i);
-  }
-
-  return '[]';
-}
-
-function solveAddTwoNumbers(input: Record<string, any>): string {
-  let l1: number[] = [];
-  let l2: number[] = [];
-
-  if (input.l1 && input.l2) {
-    l1 = Array.isArray(input.l1) ? input.l1 : [input.l1];
-    l2 = Array.isArray(input.l2) ? input.l2 : [input.l2];
-  } else if (input._rawNumbers) {
-    const raw = input._rawNumbers;
-    const mid = Math.floor(raw.length / 2);
-    l1 = raw.slice(0, mid);
-    l2 = raw.slice(mid);
-  }
-
-  const result: number[] = [];
-  let carry = 0;
-  let i = 0;
-  let j = 0;
-
-  while (i < l1.length || j < l2.length || carry > 0) {
-    const v1 = i < l1.length ? l1[i++] : 0;
-    const v2 = j < l2.length ? l2[j++] : 0;
-    const sum = v1 + v2 + carry;
-    result.push(sum % 10);
-    carry = Math.floor(sum / 10);
-  }
-
-  return `[${result.join(', ')}]`;
-}
-
-function solveLongestSubstring(input: Record<string, any>): string {
-  const s = String(input.s ?? input.str ?? (input.arg0 !== undefined ? input.arg0 : ''));
-  const map = new Map<string, number>();
-  let left = 0;
-  let maxLen = 0;
-
-  for (let right = 0; right < s.length; right++) {
-    const char = s[right];
-    if (map.has(char) && (map.get(char)! >= left)) {
-      left = map.get(char)! + 1;
-    }
-    map.set(char, right);
-    maxLen = Math.max(maxLen, right - left + 1);
-  }
-
-  return String(maxLen);
-}
-
-function solveMedianTwoSorted(input: Record<string, any>): string {
-  let nums1: number[] = [];
-  let nums2: number[] = [];
-
-  if (input.nums1 !== undefined && input.nums2 !== undefined) {
-    nums1 = Array.isArray(input.nums1) ? input.nums1 : [input.nums1];
-    nums2 = Array.isArray(input.nums2) ? input.nums2 : [input.nums2];
-  } else if (input._rawNumbers) {
-    const raw = input._rawNumbers;
-    if (raw.length >= 4) {
-      const len1 = raw[0];
-      if (raw.length > len1 + 1) {
-        nums1 = raw.slice(1, 1 + len1);
-        const len2 = raw[1 + len1];
-        nums2 = raw.slice(2 + len1, 2 + len1 + len2);
-      } else {
-        const mid = Math.floor(raw.length / 2);
-        nums1 = raw.slice(0, mid);
-        nums2 = raw.slice(mid);
-      }
-    } else {
-      const mid = Math.floor(raw.length / 2);
-      nums1 = raw.slice(0, mid);
-      nums2 = raw.slice(mid);
-    }
-  }
-
-  const merged = [...nums1, ...nums2].sort((a, b) => a - b);
-  if (merged.length === 0) return '0.00000';
-
-  const n = merged.length;
-  let median: number;
-  if (n % 2 === 1) {
-    median = merged[Math.floor(n / 2)];
-  } else {
-    median = (merged[n / 2 - 1] + merged[n / 2]) / 2.0;
-  }
-
-  return median.toFixed(5);
-}
-
-function solveTrappingRainWater(input: Record<string, any>): string {
-  let height: number[] = [];
-  if (input.height && Array.isArray(input.height)) {
-    height = input.height;
-  } else if (input._rawNumbers) {
-    const raw = input._rawNumbers;
-    if (raw.length > 1 && raw[0] === raw.length - 1) {
-      height = raw.slice(1);
-    } else {
-      height = raw;
-    }
-  }
-
-  let left = 0;
-  let right = height.length - 1;
-  let leftMax = 0;
-  let rightMax = 0;
-  let water = 0;
-
-  while (left < right) {
-    if (height[left] < height[right]) {
-      if (height[left] >= leftMax) leftMax = height[left];
-      else water += leftMax - height[left];
-      left++;
-    } else {
-      if (height[right] >= rightMax) rightMax = height[right];
-      else water += rightMax - height[right];
-      right--;
-    }
-  }
-
-  return String(water);
-}
-
-function solveLRUCache(input: Record<string, any>): string {
-  const ops: string[] = input.operations || ['LRUCache'];
-  const args: any[][] = input.operationArgs || [[2]];
-
-  let capacity = 2;
-  const cache = new Map<number, number>();
-  const output: (number | null | string)[] = [];
-
-  for (let i = 0; i < ops.length; i++) {
-    const op = ops[i];
-    const arg = args[i] || [];
-
-    if (op === 'LRUCache') {
-      capacity = arg[0] || 2;
-      cache.clear();
-      output.push(null);
-    } else if (op === 'put') {
-      const [key, value] = arg;
-      if (cache.has(key)) {
-        cache.delete(key);
-      } else if (cache.size >= capacity) {
-        const firstKey = cache.keys().next().value;
-        if (firstKey !== undefined) cache.delete(firstKey);
-      }
-      cache.set(key, value);
-      output.push(null);
-    } else if (op === 'get') {
-      const key = arg[0];
-      if (cache.has(key)) {
-        const val = cache.get(key)!;
-        cache.delete(key);
-        cache.set(key, val);
-        output.push(val);
-      } else {
-        output.push(-1);
-      }
-    }
-  }
-
-  return JSON.stringify(output).replace(/null/g, 'null');
-}
-
-function solveCourseSchedule(input: Record<string, any>): string {
-  let numCourses = 2;
-  let prereqs: number[][] = [];
-
-  if (input.numCourses !== undefined) numCourses = Number(input.numCourses);
-  if (input.prerequisites && Array.isArray(input.prerequisites)) prereqs = input.prerequisites;
-
-  const inDegree = new Array(numCourses).fill(0);
-  const adj: number[][] = Array.from({ length: numCourses }, () => []);
-
-  for (const [dest, src] of prereqs) {
-    if (src < numCourses && dest < numCourses) {
-      adj[src].push(dest);
-      inDegree[dest]++;
-    }
-  }
-
-  const queue: number[] = [];
-  for (let i = 0; i < numCourses; i++) {
-    if (inDegree[i] === 0) queue.push(i);
-  }
-
-  let count = 0;
-  while (queue.length > 0) {
-    const node = queue.shift()!;
-    count++;
-    for (const neighbor of adj[node]) {
-      inDegree[neighbor]--;
-      if (inDegree[neighbor] === 0) queue.push(neighbor);
-    }
-  }
-
-  return String(count === numCourses);
-}
-
-function solveValidParentheses(input: Record<string, any>): string {
-  const s = String(input.s ?? (input.arg0 !== undefined ? input.arg0 : ''));
-  const stack: string[] = [];
-  const map: Record<string, string> = { ')': '(', '}': '{', ']': '[' };
-
-  for (const char of s) {
-    if (map[char]) {
-      if (stack.pop() !== map[char]) return 'false';
-    } else if (['(', '{', '['].includes(char)) {
-      stack.push(char);
-    }
-  }
-
-  return String(stack.length === 0);
-}
-
-/**
  * Execute code using JavaScript runtime if user chose JS
  */
 function tryRunJavaScript(code: string, parsedInput: Record<string, any>): { success: boolean; result?: any; stdout?: string; error?: string } {
@@ -371,7 +118,7 @@ function tryRunJavaScript(code: string, parsedInput: Record<string, any>): { suc
 }
 
 /**
- * Main Evaluation Entry Point
+ * Client-side Evaluation Entry Point for Local Validation
  */
 export function evaluateCode(
   problem: Problem,
@@ -381,24 +128,20 @@ export function evaluateCode(
   expectedOutput?: string
 ): TestCaseResult {
   const trimmedCode = code.trim();
+  const startTime = typeof performance !== 'undefined' ? performance.now() : 0;
 
-  // 1. Check for basic syntax / compilation error cues
-  const isBrokenSyntax = 
-    trimmedCode.length < 15 ||
-    trimmedCode.includes('SYNTAX_ERROR') ||
-    (trimmedCode.includes('{') && (trimmedCode.split('{').length !== trimmedCode.split('}').length));
-
-  if (isBrokenSyntax) {
+  // 1. Check for empty code or basic syntax cues
+  if (!trimmedCode) {
     return {
       testCaseId: `tc-${Date.now()}`,
       input: rawInput,
       expectedOutput: expectedOutput || '',
       actualOutput: '',
       passed: false,
-      executionTimeMs: 8,
-      memoryKb: 12400,
+      executionTimeMs: 0,
+      memoryKb: 0,
       stdout: '',
-      error: `Compile Error near line 5: syntax error or unexpected token.`,
+      error: 'Cannot evaluate empty solution code.',
     };
   }
 
@@ -423,48 +166,20 @@ export function evaluateCode(
     } else if (!jsExec.success) {
       customError = jsExec.error;
     }
+  } else {
+    // Non-JS languages cannot be interpreted in the browser
+    customError = `Direct in-browser execution is only supported for JavaScript. Submit your ${language.toUpperCase()} code to run against the judge backend.`;
   }
 
-  // 4. If computedOutput not resolved by JS runner, use smart problem algorithmic solver
-  if (!computedOutput && !customError) {
-    const slug = problem.slug.toLowerCase();
-
-    if (trimmedCode.includes('return false') && !slug.includes('valid-parentheses') && !slug.includes('course-schedule')) {
-      computedOutput = 'false';
-    } else if (trimmedCode.includes('return -1') && !slug.includes('lru-cache')) {
-      computedOutput = '-1';
-    } else if (trimmedCode.includes('return {}') || trimmedCode.includes('return []')) {
-      computedOutput = '[]';
-    } else if (slug.includes('two-sum')) {
-      computedOutput = solveTwoSum(parsed);
-    } else if (slug.includes('add-two-numbers')) {
-      computedOutput = solveAddTwoNumbers(parsed);
-    } else if (slug.includes('longest-substring')) {
-      computedOutput = solveLongestSubstring(parsed);
-    } else if (slug.includes('median')) {
-      computedOutput = solveMedianTwoSorted(parsed);
-    } else if (slug.includes('trap')) {
-      computedOutput = solveTrappingRainWater(parsed);
-    } else if (slug.includes('lru-cache')) {
-      computedOutput = solveLRUCache(parsed);
-    } else if (slug.includes('course-schedule')) {
-      computedOutput = solveCourseSchedule(parsed);
-    } else if (slug.includes('valid-parentheses')) {
-      computedOutput = solveValidParentheses(parsed);
-    } else {
-      computedOutput = expectedOutput || 'Output generated';
-    }
-  }
-
-  const executionTimeMs = Math.floor(Math.random() * 18) + 10;
-  const memoryKb = 13800 + Math.floor(Math.random() * 2400);
+  const executionTimeMs = startTime > 0 ? Math.max(1, Math.round(performance.now() - startTime)) : 1;
+  const memoryKb = 0;
 
   // Normalize outputs for comparison
   const normalize = (s: string) => s.replace(/\s+/g, '').replace(/\[null/g, '[null').trim();
   const isCustomInput = !expectedOutput || expectedOutput === '(Custom input evaluation)';
-  const passed = isCustomInput ? !customError : normalize(computedOutput) === normalize(expectedOutput);
+  const passed = !customError && (isCustomInput ? true : normalize(computedOutput) === normalize(expectedOutput));
 
-  const stdoutHeader = `[stdout] Language runtime: ${language.toUpperCase()} (Sandbox ISO-2026)\n[stdout] Execution status: Exit code 0 (Success)\n[stdout] Output returned: ${computedOutput}`;
+  const stdoutHeader = `[stdout] Language runtime: ${language.toUpperCase()}\n[stdout] Output returned: ${computedOutput || '(no output)'}`;
   const stdout = customStdout ? `${stdoutHeader}\n[debug] ${customStdout}` : stdoutHeader;
 
   return {
@@ -475,7 +190,7 @@ export function evaluateCode(
     passed,
     executionTimeMs,
     memoryKb,
-    stdout,
+    stdout: customError ? '' : stdout,
     error: customError,
   };
 }

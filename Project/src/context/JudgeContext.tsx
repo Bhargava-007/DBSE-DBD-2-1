@@ -1,12 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { 
   Problem, 
   Submission, 
   User, 
   Contest,
   SupportedLanguage, 
-  TestCaseResult, 
-  Verdict 
+  TestCaseResult 
 } from '../types/judge';
 
 // API & Socket Integrations
@@ -81,7 +81,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [problems, setProblems] = useState<Problem[]>([]);
   const [contests, setContests] = useState<Contest[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [activeProblemId, setActiveProblemId] = useState<string>('prob-1');
+  const [activeProblemId, setActiveProblemId] = useState<string>('');
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [authModalMode, setAuthModalMode] = useState<'login' | 'register'>('login');
@@ -99,6 +99,8 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [lastRunResults, setLastRunResults] = useState<TestCaseResult[] | null>(null);
   const [lastSubmissionResult, setLastSubmissionResult] = useState<Submission | null>(null);
 
+  const navigate = useNavigate();
+
   // 1. Theme Management with documentElement class, data-theme attribute, and localStorage
   useEffect(() => {
     if (theme === 'dark') {
@@ -112,6 +114,16 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     localStorage.setItem('algoflow_theme', theme);
   }, [theme]);
+
+  // Session expired event handler from 401 interceptor
+  useEffect(() => {
+    const handleAuthExpired = () => {
+      logoutUser();
+      navigate('/login', { state: { message: 'Your session has expired. Please log in again.' } });
+    };
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
+  }, [navigate]);
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
@@ -272,8 +284,12 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCurrentUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('algoflow_token');
+    localStorage.removeItem('algoflow_user');
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
+    sessionStorage.removeItem('algoflow_token');
+    sessionStorage.removeItem('algoflow_user');
     disconnectContestSocket();
   };
 
@@ -290,7 +306,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
       // 1. If custom input provided, evaluate custom run
       if (customInput && customInput.trim().length > 0) {
-        await new Promise(resolve => setTimeout(resolve, 450));
+        await new Promise(resolve => setTimeout(resolve, 300));
         const evaluatedCustom = evaluateCode(
           problem,
           language,
@@ -313,66 +329,61 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return allResults;
       }
 
-      // 2. Attempt real backend submission if problem is in database
-      const isDbProblem = /^[0-9a-fA-F]{24}$/.test(problem.id);
-      if (isDbProblem) {
-        try {
-          const sub = await submissionsApi.createSubmission({
-            problemId: problem.id,
-            language,
-            code,
+      // 2. Attempt real backend submission
+      try {
+        const sub = await submissionsApi.createSubmission({
+          problemId: problem.id,
+          language,
+          code,
+        });
+
+        const finalSub = await submissionsApi.pollSubmissionUntilDone(sub.id, (pendingSub) => {
+          setLastSubmissionResult(pendingSub);
+        });
+
+        const passed = finalSub.verdict === 'Accepted';
+        const sampleResults: TestCaseResult[] = problem.sampleTestCases.map((tc, idx) => {
+          const evalRes = evaluateCode(problem, language, code, tc.input, tc.expectedOutput);
+          return {
+            testCaseId: tc.id || `tc-${idx}`,
+            input: tc.input,
+            expectedOutput: tc.expectedOutput,
+            actualOutput: passed ? tc.expectedOutput : (finalSub.errorMessage || evalRes.actualOutput),
+            passed: finalSub.verdict === 'Accepted',
+            executionTimeMs: finalSub.executionTimeMs,
+            memoryKb: finalSub.memoryKb,
+            stdout: finalSub.stdout || evalRes.stdout,
+            error: finalSub.errorMessage,
+          };
+        });
+
+        setLastRunResults(sampleResults);
+        setIsRunningCode(false);
+        return sampleResults;
+      } catch (backendErr: any) {
+        // Fall back to client evaluation if local JS execution
+        if (language === 'javascript') {
+          const results: TestCaseResult[] = problem.sampleTestCases.map((tc, idx) => {
+            const evalRes = evaluateCode(problem, language, code, tc.input, tc.expectedOutput);
+            evalRes.testCaseId = tc.id || `tc-${idx}`;
+            return evalRes;
           });
-
-          const finalSub = await submissionsApi.pollSubmissionUntilDone(sub.id, (pendingSub) => {
-            setLastSubmissionResult(pendingSub);
-          });
-
-          const isEnvError = finalSub.errorMessage && (
-            finalSub.errorMessage.includes('not recognized') ||
-            finalSub.errorMessage.includes('ENOENT') ||
-            finalSub.errorMessage.includes('spawn')
-          );
-
-          if (!isEnvError) {
-            const passed = finalSub.verdict === 'Accepted';
-            const sampleResults: TestCaseResult[] = problem.sampleTestCases.map((tc, idx) => {
-              const evalRes = evaluateCode(problem, language, code, tc.input, tc.expectedOutput);
-              return {
-                testCaseId: tc.id || `tc-${idx}`,
-                input: tc.input,
-                expectedOutput: tc.expectedOutput,
-                actualOutput: passed ? tc.expectedOutput : evalRes.actualOutput,
-                passed: evalRes.passed,
-                executionTimeMs: finalSub.executionTimeMs || evalRes.executionTimeMs,
-                memoryKb: finalSub.memoryKb || evalRes.memoryKb,
-                stdout: finalSub.stdout || evalRes.stdout,
-                error: evalRes.error,
-              };
-            });
-
-            setLastRunResults(sampleResults);
-            setIsRunningCode(false);
-            return sampleResults;
-          }
-        } catch {
-          console.warn('[JudgeContext] Backend runCode error, using local sandbox fallback evaluator.');
+          setLastRunResults(results);
+          setIsRunningCode(false);
+          return results;
         }
+
+        const errMsg = backendErr.response?.data?.message || backendErr.message || 'Cannot connect to judge service.';
+        setApiError(errMsg);
+        setIsRunningCode(false);
+        throw new Error(errMsg);
       }
-    } catch {
-      console.warn('[JudgeContext] runCode error, using local sandbox fallback evaluator.');
+    } catch (err: any) {
+      const errMsg = err.message || 'Cannot connect to judge service.';
+      setApiError(errMsg);
+      setIsRunningCode(false);
+      throw err;
     }
-
-    // High-fidelity fallback evaluation for sample tests
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const results: TestCaseResult[] = problem.sampleTestCases.map((tc, idx) => {
-      const evalRes = evaluateCode(problem, language, code, tc.input, tc.expectedOutput);
-      evalRes.testCaseId = tc.id || `tc-${idx}`;
-      return evalRes;
-    });
-
-    setLastRunResults(results);
-    setIsRunningCode(false);
-    return results;
   };
 
   // 7. Submit Solution Handler (Full hidden test case suite evaluation)
@@ -386,7 +397,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsLoadingSubmission(true);
     setApiError(null);
 
-    // Pre-evaluate sample test cases so clicking Case tabs immediately has actual outputs
+    // Evaluate sample test cases for immediate visual feedback
     const sampleEvalResults: TestCaseResult[] = problem.sampleTestCases.map((tc, idx) => {
       const evalRes = evaluateCode(problem, language, code, tc.input, tc.expectedOutput);
       evalRes.testCaseId = tc.id || `tc-${idx}`;
@@ -395,122 +406,44 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setLastRunResults(sampleEvalResults);
 
     try {
-      const isDbProblem = /^[0-9a-fA-F]{24}$/.test(problem.id);
-
-      if (isDbProblem) {
-        // Real Backend submission + BullMQ queue + Worker polling
-        const newSub = await submissionsApi.createSubmission({
-          problemId: problem.id,
-          language,
-          code,
-          contestId,
-        });
-
-        setLastSubmissionResult(newSub);
-
-        const finalSub = await submissionsApi.pollSubmissionUntilDone(newSub.id, (pendingSub) => {
-          setLastSubmissionResult(pendingSub);
-        });
-
-        const isEnvError = finalSub.errorMessage && (
-          finalSub.errorMessage.includes('not recognized') ||
-          finalSub.errorMessage.includes('ENOENT') ||
-          finalSub.errorMessage.includes('spawn')
-        );
-
-        if (!isEnvError) {
-          setSubmissions(prev => [finalSub, ...prev.filter(s => s.id !== finalSub.id)]);
-          setLastSubmissionResult(finalSub);
-          setIsSubmitting(false);
-          setIsLoadingSubmission(false);
-
-          // Update user stats if Accepted
-          if (finalSub.verdict === 'Accepted' && currentUser && !isProblemSolved(problem.id)) {
-            const diffKey = problem.difficulty === 'Easy' ? 'easySolved' : problem.difficulty === 'Medium' ? 'mediumSolved' : 'hardSolved';
-            setCurrentUser({
-              ...currentUser,
-              solvedCount: currentUser.solvedCount + 1,
-              [diffKey]: currentUser[diffKey] + 1,
-              rating: currentUser.rating + 8,
-            });
-          }
-
-          return finalSub;
-        } else {
-          console.warn('[JudgeContext] Backend host missing compiler, falling through to local sandbox evaluator.');
-        }
-      }
-    } catch (err: any) {
-      console.warn('[JudgeContext] Real submission pipeline offline. Executing local evaluation:', err.message);
-    }
-
-    // Client-side evaluation for mock catalogue
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    const allSamplePassed = sampleEvalResults.every(r => r.passed);
-    let verdict: Verdict = allSamplePassed ? 'Accepted' : 'Wrong Answer';
-    let errorMessage: string | undefined = sampleEvalResults.find(r => r.error)?.error;
-    let passed = sampleEvalResults.filter(r => r.passed).length;
-    const total = problem.sampleTestCases.length + problem.hiddenTestCasesCount;
-
-    if (code.includes('TLE') || code.includes('while (true)') || code.includes('while(true)')) {
-      verdict = 'Time Limit Exceeded';
-      passed = Math.floor(total * 0.65);
-      errorMessage = `Time Limit Exceeded: Process terminated after ${problem.timeLimitMs}ms threshold.`;
-    } else if (code.includes('WA') || code.includes('return false') || code.length < 25) {
-      verdict = 'Wrong Answer';
-      passed = Math.floor(total * 0.4);
-      errorMessage = 'Wrong Answer: Output mismatch on hidden test case #18.';
-    } else if (code.includes('MLE')) {
-      verdict = 'Memory Limit Exceeded';
-      passed = Math.floor(total * 0.7);
-      errorMessage = `Memory Limit Exceeded: Allocated 278MB exceeds ${problem.memoryLimitMb}MB limit.`;
-    } else if (code.includes('RTE') || code.includes('null')) {
-      verdict = 'Runtime Error';
-      passed = 4;
-      errorMessage = 'Segmentation fault (core dumped): Invalid memory reference.';
-    } else if (allSamplePassed) {
-      passed = total;
-    }
-
-    const execTime = verdict === 'Time Limit Exceeded' ? problem.timeLimitMs + 10 : Math.floor(Math.random() * 35) + 8;
-    const memKb = verdict === 'Memory Limit Exceeded' ? problem.memoryLimitMb * 1024 + 500 : 13800 + Math.floor(Math.random() * 3000);
-
-    const fallbackSubmission: Submission = {
-      id: `sub_${Math.floor(100000 + Math.random() * 900000)}`,
-      userId: currentUser?.id || 'guest',
-      username: currentUser?.username || 'Guest',
-      problemId: problem.id,
-      problemTitle: problem.title,
-      problemDifficulty: problem.difficulty,
-      language,
-      code,
-      verdict,
-      executionTimeMs: execTime,
-      memoryKb: memKb,
-      submittedAt: new Date().toISOString(),
-      testCasesPassed: passed,
-      totalTestCases: total,
-      stdout: verdict === 'Accepted' ? `All ${total} test cases passed.\nCPU time: ${execTime}ms | Peak RSS: ${(memKb / 1024).toFixed(1)} MB` : undefined,
-      errorMessage,
-    };
-
-    setSubmissions(prev => [fallbackSubmission, ...prev]);
-    setLastSubmissionResult(fallbackSubmission);
-    setIsSubmitting(false);
-    setIsLoadingSubmission(false);
-
-    if (verdict === 'Accepted' && currentUser && !isProblemSolved(problem.id)) {
-      const diffKey = problem.difficulty === 'Easy' ? 'easySolved' : problem.difficulty === 'Medium' ? 'mediumSolved' : 'hardSolved';
-      setCurrentUser({
-        ...currentUser,
-        solvedCount: currentUser.solvedCount + 1,
-        [diffKey]: currentUser[diffKey] + 1,
-        rating: currentUser.rating + 8,
+      // Real Backend submission + BullMQ queue + Worker polling
+      const newSub = await submissionsApi.createSubmission({
+        problemId: problem.id,
+        language,
+        code,
+        contestId,
       });
-    }
 
-    return fallbackSubmission;
+      setLastSubmissionResult(newSub);
+
+      const finalSub = await submissionsApi.pollSubmissionUntilDone(newSub.id, (pendingSub) => {
+        setLastSubmissionResult(pendingSub);
+      });
+
+      setSubmissions(prev => [finalSub, ...prev.filter(s => s.id !== finalSub.id)]);
+      setLastSubmissionResult(finalSub);
+      setIsSubmitting(false);
+      setIsLoadingSubmission(false);
+
+      // Update user stats if Accepted
+      if (finalSub.verdict === 'Accepted' && currentUser && !isProblemSolved(problem.id)) {
+        const diffKey = problem.difficulty === 'Easy' ? 'easySolved' : problem.difficulty === 'Medium' ? 'mediumSolved' : 'hardSolved';
+        setCurrentUser({
+          ...currentUser,
+          solvedCount: currentUser.solvedCount + 1,
+          [diffKey]: currentUser[diffKey] + 1,
+          rating: currentUser.rating + 8,
+        });
+      }
+
+      return finalSub;
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Submission failed. Please check your connection.';
+      setApiError(errorMsg);
+      setIsSubmitting(false);
+      setIsLoadingSubmission(false);
+      throw new Error(errorMsg);
+    }
   };
 
   // 8. Add New Problem Handler

@@ -222,6 +222,20 @@ export class DockerSandbox {
         inspect: { ExitCode: number };
       };
 
+      // Measure real RSS memory from container stats
+      let measuredMemoryKb = 0;
+      try {
+        const stats = await (container.stats as any)({ stream: false });
+        if (stats && stats.memory_stats) {
+          const usage = stats.memory_stats.usage || 0;
+          const cache = stats.memory_stats.stats?.cache || stats.memory_stats.stats?.inactive_file || 0;
+          const rss = Math.max(0, usage - cache);
+          measuredMemoryKb = Math.round(rss / 1024);
+        }
+      } catch {
+        measuredMemoryKb = 0;
+      }
+
       // Check for OOM kill
       try {
         const containerInfo = await container.inspect();
@@ -235,7 +249,7 @@ export class DockerSandbox {
       const exitCode = execData.inspect.ExitCode || 0;
       const memoryKb = memoryExceeded
         ? Math.round(memoryBytes / 1024) + 100
-        : Math.round(12000 + Math.random() * 4000);
+        : measuredMemoryKb;
 
       return {
         stdout: execData.output.stdout,

@@ -147,7 +147,12 @@ router.post(
           testCases: allTestCases,
         });
       } catch (queueErr: any) {
-        logger.warn({ err: queueErr }, `[Submissions Route] BullMQ enqueue warning (Redis may be offline): ${queueErr.message}`);
+        logger.error({ err: queueErr }, `[Submissions Route] BullMQ enqueue failure: ${queueErr.message}`);
+        await Submission.findByIdAndDelete(submission._id);
+        return res.status(503).json({
+          success: false,
+          message: 'Judge queue unavailable. Try again shortly.',
+        });
       }
 
       res.status(201).json({

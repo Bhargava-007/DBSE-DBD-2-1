@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useJudge } from '../context/JudgeContext';
-import { Lock, User, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, User, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+
 interface DemoUser {
-  id: string;
+  label: string;
   username: string;
-  name: string;
+  password: string;
   role: 'admin' | 'setter' | 'user';
-  rating: number;
 }
 
 const DEMO_USERS: DemoUser[] = [
-  { id: 'usr_892144', username: 'alex_dev', name: 'Alex Chen', role: 'admin', rating: 1842 },
-  { id: 'usr_892145', username: 'sarah_k', name: 'Sarah Kim', role: 'setter', rating: 1910 },
-  { id: 'usr_892146', username: 'marcus_v', name: 'Marcus Vance', role: 'user', rating: 1725 },
+  { label: 'Admin', username: 'admin', password: 'Admin@123', role: 'admin' },
+  { label: 'Setter', username: 'setter', password: 'Setter@123', role: 'setter' },
+  { label: 'User', username: 'bhargava', password: 'User@123', role: 'user' },
 ];
 
 export const LoginPage: React.FC = () => {
@@ -27,7 +27,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const from = (location.state as { from?: string })?.from || '/dashboard';
+  const from = (location.state as { from?: string; message?: string })?.from || '/dashboard';
+  const sessionExpiredMessage = (location.state as { message?: string })?.message;
 
   // If already logged in, redirect immediately
   React.useEffect(() => {
@@ -56,30 +57,16 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async (demoUser: typeof DEMO_USERS[0]) => {
+  const handleQuickLogin = async (demoUser: DemoUser) => {
     setError('');
-    const credentialsMap: Record<string, { username: string; password: string }> = {
-      alex_dev: { username: 'admin', password: 'Admin@123' },
-      sarah_k: { username: 'setter', password: 'Setter@123' },
-      marcus_v: { username: 'bhargava', password: 'User@123' },
-      admin: { username: 'admin', password: 'Admin@123' },
-      setter: { username: 'setter', password: 'Setter@123' },
-      bhargava: { username: 'bhargava', password: 'User@123' },
-    };
-
-    const creds =
-      credentialsMap[demoUser.username] ||
-      (demoUser.role === 'admin'
-        ? credentialsMap.admin
-        : demoUser.role === 'setter'
-        ? credentialsMap.setter
-        : credentialsMap.bhargava);
-
+    setIsLoading(true);
     try {
-      await loginUser(creds.username, creds.password, rememberMe);
+      await loginUser(demoUser.username, demoUser.password, rememberMe);
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Quick login failed.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -104,6 +91,14 @@ export const LoginPage: React.FC = () => {
           </p>
         </div>
 
+        {/* Session Expired Banner if passed from 401 interceptor */}
+        {sessionExpiredMessage && (
+          <div className="p-3 rounded-[var(--r-md)] bg-[var(--amber-dim)] border border-[var(--amber)]/30 text-[12px] text-[var(--amber)] flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{sessionExpiredMessage}</span>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -123,7 +118,7 @@ export const LoginPage: React.FC = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. admin or alex_dev"
+                placeholder="e.g. admin or bhargava"
                 className="w-full h-[38px] bg-[var(--bg-canvas)] border border-[var(--border)] focus:border-[var(--accent)] rounded-[var(--r-md)] px-3 pl-9 text-[14px] text-[var(--text-1)] placeholder-[var(--text-3)] focus:outline-none transition-colors"
               />
             </div>
@@ -168,7 +163,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-primary w-full justify-center !h-[38px] !text-[13px]"
+            className="btn-primary w-full justify-center !h-[38px] !text-[13px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span>{isLoading ? 'Signing In...' : 'Sign In'}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -185,32 +180,22 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {DEMO_USERS.map(demoUser => {
-              const roleLabel =
-                demoUser.username === 'alex_dev' || demoUser.username === 'admin' || demoUser.role === 'admin'
-                  ? 'Admin'
-                  : demoUser.username === 'sarah_k' || demoUser.username === 'setter' || demoUser.role === 'setter'
-                  ? 'Problem Setter'
-                  : 'Contestant';
-
-              return (
-                <div key={demoUser.id} className="flex flex-col items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleQuickLogin(demoUser)}
-                    className="w-full p-2 rounded-[var(--r-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-left transition-colors space-y-0.5 cursor-pointer"
-                  >
-                    <div className="text-[12px] font-medium text-[var(--text-1)] truncate">
-                      {demoUser.name.split(' ')[0]}
-                    </div>
-                    <div className="text-[11px] font-mono text-[var(--accent)]">
-                      {demoUser.rating}
-                    </div>
-                  </button>
-                  <span className="text-xs text-[var(--text-3)]">{roleLabel}</span>
+            {DEMO_USERS.map(demoUser => (
+              <button
+                key={demoUser.username}
+                type="button"
+                onClick={() => handleQuickLogin(demoUser)}
+                disabled={isLoading}
+                className="w-full p-2.5 rounded-[var(--r-md)] bg-[var(--bg-card)] hover:bg-[var(--bg-hover)] border border-[var(--border)] text-left transition-colors space-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <div className="text-[12px] font-medium text-[var(--text-1)] truncate">
+                  {demoUser.label}
                 </div>
-              );
-            })}
+                <div className="text-[11px] font-mono text-[var(--text-3)] truncate">
+                  @{demoUser.username}
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

@@ -28,9 +28,8 @@ import {
 import { useJudge } from '../context/JudgeContext';
 import { renderMarkdownToHtml } from '../utils/markdownRenderer';
 import { normalizeContest } from '../api/contests';
+import { apiClient } from '../api/client';
 import type { Contest } from '../types/judge';
-
-const API = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 interface AdminStats {
   userCount: number;
@@ -163,18 +162,12 @@ export const AdminPage: React.FC = () => {
   const [matrixFilterProblem, setMatrixFilterProblem] = useState<string>('All');
   const [selectedPair, setSelectedPair] = useState<SuspiciousMatch | null>(null);
 
-  const authHeader = () => ({
-    Authorization: `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`,
-    'Content-Type': 'application/json',
-  });
-
   const fetchStats = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/admin/stats`, { headers: authHeader() });
-      const json = await res.json();
-      if (json.success) setStats(json.data);
-    } catch {
-      setError('Failed to load stats.');
+      const res = await apiClient.get('/admin/stats');
+      if (res.data.success) setStats(res.data.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load stats.');
     }
   }, []);
 
@@ -182,17 +175,16 @@ export const AdminPage: React.FC = () => {
     setLoading(true);
     try {
       const url = search 
-        ? `${API}/problems?status=all&search=${encodeURIComponent(search)}&limit=100` 
-        : `${API}/problems?status=all&limit=100`;
-      const res = await fetch(url, { headers: authHeader() });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setProblems(json.data.problems || json.data);
+        ? `/problems?status=all&search=${encodeURIComponent(search)}&limit=100` 
+        : `/problems?status=all&limit=100`;
+      const res = await apiClient.get(url);
+      if (res.data.success && res.data.data) {
+        setProblems(res.data.data.problems || res.data.data);
       } else {
-        setError(json.error || 'Failed to load problems.');
+        setError(res.data.error || 'Failed to load problems.');
       }
-    } catch {
-      setError('Failed to load problems catalog.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load problems catalog.');
     } finally {
       setLoading(false);
     }
@@ -200,13 +192,8 @@ export const AdminPage: React.FC = () => {
 
   const handleQuickStatusChange = async (problemId: string, newStatus: 'draft' | 'published' | 'archived') => {
     try {
-      const res = await fetch(`${API}/problems/${problemId}`, {
-        method: 'PUT',
-        headers: authHeader(),
-        body: JSON.stringify({ status: newStatus }),
-      });
-      const json = await res.json();
-      if (json.success) {
+      const res = await apiClient.put(`/problems/${problemId}`, { status: newStatus });
+      if (res.data.success) {
         setProblems(prev =>
           prev.map(p => {
             if ((p._id || p.id) === problemId) {
@@ -216,20 +203,19 @@ export const AdminPage: React.FC = () => {
           })
         );
       } else {
-        setError(json.error || 'Failed to update problem status.');
+        setError(res.data.error || 'Failed to update problem status.');
       }
-    } catch {
-      setError('Failed to update problem status.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to update problem status.');
     }
   };
 
   const fetchAdminContests = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/contests`);
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        const list = json.data.map(normalizeContest);
+      const res = await apiClient.get('/contests');
+      if (res.data.success && Array.isArray(res.data.data)) {
+        const list = res.data.data.map(normalizeContest);
         setAdminContests(list);
         const initialDrafts: Record<string, string> = {};
         list.forEach((c: Contest) => {
@@ -239,8 +225,8 @@ export const AdminPage: React.FC = () => {
       } else {
         setError('Failed to load contests.');
       }
-    } catch {
-      setError('Failed to load contests list.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load contests list.');
     } finally {
       setLoading(false);
     }
@@ -251,13 +237,8 @@ export const AdminPage: React.FC = () => {
     setEditorialSaveSuccess(null);
     try {
       const content = editorialDrafts[contestId] ?? '';
-      const res = await fetch(`${API}/contests/${contestId}/editorial`, {
-        method: 'PUT',
-        headers: authHeader(),
-        body: JSON.stringify({ editorial: content }),
-      });
-      const json = await res.json();
-      if (json.success) {
+      const res = await apiClient.put(`/contests/${contestId}/editorial`, { editorial: content });
+      if (res.data.success) {
         setEditorialSaveSuccess(contestId);
         setAdminContests(prev =>
           prev.map(c => (c.id === contestId ? { ...c, editorial: content } : c))
@@ -266,10 +247,10 @@ export const AdminPage: React.FC = () => {
           setEditorialSaveSuccess(prev => (prev === contestId ? null : prev));
         }, 3000);
       } else {
-        setError(json.error || 'Failed to save editorial.');
+        setError(res.data.error || 'Failed to save editorial.');
       }
-    } catch {
-      setError('Failed to save editorial to server.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to save editorial to server.');
     } finally {
       setSavingEditorialId(null);
     }
@@ -278,12 +259,11 @@ export const AdminPage: React.FC = () => {
   const fetchUsers = useCallback(async (search = '') => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/admin/users?search=${encodeURIComponent(search)}&limit=30`, { headers: authHeader() });
-      const json = await res.json();
-      if (json.success) setUsers(json.data.users);
-      else setError(json.error);
-    } catch {
-      setError('Failed to load users.');
+      const res = await apiClient.get(`/admin/users?search=${encodeURIComponent(search)}&limit=30`);
+      if (res.data.success) setUsers(res.data.data.users);
+      else setError(res.data.error || 'Failed to load users.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load users.');
     } finally {
       setLoading(false);
     }
@@ -292,12 +272,11 @@ export const AdminPage: React.FC = () => {
   const fetchSubmissions = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/admin/submissions/recent?limit=25`, { headers: authHeader() });
-      const json = await res.json();
-      if (json.success) setSubmissions(json.data);
-      else setError(json.error);
-    } catch {
-      setError('Failed to load submissions.');
+      const res = await apiClient.get('/admin/submissions/recent?limit=25');
+      if (res.data.success) setSubmissions(res.data.data);
+      else setError(res.data.error || 'Failed to load submissions.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load submissions.');
     } finally {
       setLoading(false);
     }
@@ -306,12 +285,11 @@ export const AdminPage: React.FC = () => {
   const fetchHealth = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/admin/health`, { headers: authHeader() });
-      const json = await res.json();
-      if (json.success) setHealth(json.data);
-      else setError(json.error);
-    } catch {
-      setError('Failed to load health data.');
+      const res = await apiClient.get('/admin/health');
+      if (res.data.success) setHealth(res.data.data);
+      else setError(res.data.error || 'Failed to load health data.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load health data.');
     } finally {
       setLoading(false);
     }
@@ -319,10 +297,9 @@ export const AdminPage: React.FC = () => {
 
   const fetchContestsList = useCallback(async () => {
     try {
-      const res = await fetch(`${API}/contests`);
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
-        const list: ContestOption[] = json.data.map((c: any) => ({
+      const res = await apiClient.get('/contests');
+      if (res.data.success && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        const list: ContestOption[] = res.data.data.map((c: any) => ({
           id: c.id || c._id,
           title: c.title,
           participantCount: c.participantCount || 0,
@@ -347,22 +324,17 @@ export const AdminPage: React.FC = () => {
     setScanningPlagiarism(true);
     setPlagiarismError(null);
     try {
-      const res = await fetch(`${API}/plagiarism/scan`, {
-        method: 'POST',
-        headers: authHeader(),
-        body: JSON.stringify({
-          contestId: selectedContestId,
-          threshold: threshold / 100,
-        }),
+      const res = await apiClient.post('/plagiarism/scan', {
+        contestId: selectedContestId,
+        threshold: threshold / 100,
       });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setPlagiarismReport(json.data);
+      if (res.data.success && res.data.data) {
+        setPlagiarismReport(res.data.data);
       } else {
-        setPlagiarismError(json.error || 'Plagiarism analysis scan returned an error.');
+        setPlagiarismError(res.data.error || 'Plagiarism analysis scan returned an error.');
       }
     } catch (err: any) {
-      setPlagiarismError(err.message || 'Failed to dispatch scan to Plagiarism Service on port 4002.');
+      setPlagiarismError(err.response?.data?.message || err.response?.data?.error || err.message || 'Failed to dispatch scan to Plagiarism Service.');
     } finally {
       setScanningPlagiarism(false);
     }
@@ -372,12 +344,9 @@ export const AdminPage: React.FC = () => {
     if (!contestId) return;
     setPlagiarismError(null);
     try {
-      const res = await fetch(`${API}/plagiarism/scan/${contestId}`, {
-        headers: authHeader(),
-      });
-      const json = await res.json();
-      if (json.success && json.data) {
-        setPlagiarismReport(json.data);
+      const res = await apiClient.get(`/plagiarism/scan/${contestId}`);
+      if (res.data.success && res.data.data) {
+        setPlagiarismReport(res.data.data);
       } else {
         setPlagiarismReport(null);
       }
@@ -389,19 +358,14 @@ export const AdminPage: React.FC = () => {
   const changeRole = async (userId: string, newRole: string) => {
     setRoleUpdating(userId);
     try {
-      const res = await fetch(`${API}/admin/users/${userId}/role`, {
-        method: 'PATCH',
-        headers: authHeader(),
-        body: JSON.stringify({ role: newRole }),
-      });
-      const json = await res.json();
-      if (json.success) {
+      const res = await apiClient.patch(`/admin/users/${userId}/role`, { role: newRole });
+      if (res.data.success) {
         setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
       } else {
-        setError(json.error);
+        setError(res.data.error || 'Failed to update role.');
       }
-    } catch {
-      setError('Failed to update role.');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to update role.');
     } finally {
       setRoleUpdating(null);
     }

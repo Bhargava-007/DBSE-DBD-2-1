@@ -28,13 +28,17 @@ apiClient.interceptors.response.use(
   (error: AxiosError) => {
     if (error.response?.status === 401) {
       // Clear expired auth session
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-      if (token) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('user');
-        console.warn('[API Client] Session expired or unauthorized (401). Auth session cleared.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('algoflow_token');
+      localStorage.removeItem('algoflow_user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      sessionStorage.removeItem('algoflow_token');
+      sessionStorage.removeItem('algoflow_user');
+      
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth:expired'));
       }
     }
     return Promise.reject(error);

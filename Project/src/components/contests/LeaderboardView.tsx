@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useJudge } from '../../context/JudgeContext';
 import { ArrowLeft, Trophy, Check, Clock, CheckCircle2, Loader2, BookOpen, FileText } from 'lucide-react';
-import { getLeaderboard, getContest } from '../../api/contests';
+import { getLeaderboard, getContest, getContests } from '../../api/contests';
 import { renderMarkdownToHtml } from '../../utils/markdownRenderer';
 import { 
   getContestSocket, 
@@ -25,12 +25,12 @@ interface ProblemColumn {
 }
 
 export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
-  contestId = 'cnt-411',
-  contestTitle = 'Global CodeSprint 2026',
+  contestId,
+  contestTitle,
 }) => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const activeContestId = id || contestId;
+  const [resolvedContestId, setResolvedContestId] = useState<string | undefined>(id || contestId);
 
   const { currentUser } = useJudge();
   const [contest, setContest] = useState<Contest | null>(null);
@@ -39,10 +39,35 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<'scoreboard' | 'editorial'>('scoreboard');
 
+  // Auto-resolve contest if none specified in route
+  useEffect(() => {
+    if (id || contestId) {
+      setResolvedContestId(id || contestId);
+      return;
+    }
+
+    const resolveActive = async () => {
+      try {
+        const contestList = await getContests();
+        if (contestList && contestList.length > 0) {
+          const live = contestList.find((c: Contest) => (c.status as string)?.toLowerCase() === 'live');
+          setResolvedContestId(live ? live.id : contestList[0].id);
+        } else {
+          setIsLoading(false);
+        }
+      } catch {
+        setIsLoading(false);
+      }
+    };
+    resolveActive();
+  }, [id, contestId]);
+
+  const activeContestId = resolvedContestId;
   const isContestEnded = contest?.status?.toLowerCase() === 'ended' || contest?.status === 'Ended';
 
   // Fetch contest metadata for challenge set
   const fetchContestData = useCallback(async () => {
+    if (!activeContestId) return;
     try {
       const contestData = await getContest(activeContestId);
       if (contestData) {
@@ -55,6 +80,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
 
   // Fetch standings via REST API and sort ICPC-style: Solved desc, Penalty asc
   const fetchLeaderboardData = useCallback(async () => {
+    if (!activeContestId) return;
     try {
       const response = await getLeaderboard(activeContestId);
       const rawEntries = response.entries || [];
@@ -88,6 +114,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
   }, [activeContestId]);
 
   useEffect(() => {
+    if (!activeContestId) return;
     fetchContestData();
     fetchLeaderboardData();
 
@@ -150,13 +177,7 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
       }));
     }
 
-    // Default fallback columns
-    return [
-      { id: 'prob-1', label: 'A', title: 'Problem A' },
-      { id: 'prob-2', label: 'B', title: 'Problem B' },
-      { id: 'prob-3', label: 'C', title: 'Problem C' },
-      { id: 'prob-4', label: 'D', title: 'Problem D' },
-    ];
+    return [];
   }, [contest, leaderboard]);
 
   const getProblemResult = (entry: LeaderboardEntry, col: ProblemColumn) => {
@@ -170,8 +191,21 @@ export const LeaderboardView: React.FC<LeaderboardViewProps> = ({
     );
   };
 
-  const displayTitle = contest?.title || contestTitle;
+  const displayTitle = contest?.title || contestTitle || 'Tournament Standings';
   const maxSolved = leaderboard.length > 0 ? Math.max(...leaderboard.map(e => e.solvedCount || 0)) : 0;
+
+  if (!activeContestId && !isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-20 text-center space-y-4 text-[var(--bone)]">
+        <Trophy className="w-12 h-12 text-[var(--text-3)] mx-auto opacity-50" />
+        <h2 className="text-xl font-bold">No active contest. Check back soon.</h2>
+        <p className="text-sm text-[var(--text-3)]">There are currently no active or upcoming tournaments scheduled.</p>
+        <button onClick={() => navigate('/contests')} className="btn-primary !text-xs mt-2">
+          View All Contests
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6 page-fade text-[var(--bone)]">

@@ -52,12 +52,22 @@ export const ProblemWorkspace: React.FC = () => {
 
   // Resolve problem matching URL slug or id
   const activeProblem = useMemo(() => {
-    if (slug) {
+    if (slug && problems.length > 0) {
       const found = problems.find(p => p.slug === slug || p.id === slug);
       if (found) return found;
     }
     return contextActiveProblem || problems[0];
   }, [slug, problems, contextActiveProblem]);
+
+  // Handle invalid slug lookup
+  useEffect(() => {
+    if (slug && problems.length > 0) {
+      const found = problems.find(p => p.slug === slug || p.id === slug);
+      if (!found) {
+        navigate('/problems', { state: { error: `Problem "${slug}" not found.` }, replace: true });
+      }
+    }
+  }, [slug, problems, navigate]);
 
   const username = currentUser?.username ?? 'guest';
   const problemKey = activeProblem?.slug || activeProblem?.id || slug || '';

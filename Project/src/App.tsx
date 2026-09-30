@@ -19,6 +19,7 @@ import { CreateProblemPage } from './pages/CreateProblemPage';
 import { EditProblemPage } from './pages/EditProblemPage';
 import { CreateContestPage } from './pages/CreateContestPage';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { Code2, ShieldCheck } from 'lucide-react';
 
 const MainContent: React.FC = () => {
@@ -60,7 +61,7 @@ const MainContent: React.FC = () => {
           <Route 
             path="/admin" 
             element={
-              <ProtectedRoute allowedRoles={['admin', 'setter']}>
+              <ProtectedRoute roles={['admin', 'setter']}>
                 <AdminPage />
               </ProtectedRoute>
             } 
@@ -133,9 +134,11 @@ const MainContent: React.FC = () => {
 
 export function App() {
   return (
-    <JudgeProvider>
-      <MainContent />
-    </JudgeProvider>
+    <ErrorBoundary>
+      <JudgeProvider>
+        <MainContent />
+      </JudgeProvider>
+    </ErrorBoundary>
   );
 }
 
