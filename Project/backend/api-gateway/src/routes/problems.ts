@@ -79,11 +79,10 @@ router.get(
       if (status && status !== 'all') {
         conditions.push({ status });
       } else if (!status) {
-        // Public list only shows published problems
         conditions.push({
           $or: [
             { status: 'published' },
-            { status: { $exists: false }, isPublished: true },
+            { isPublished: true },
           ],
         });
       }

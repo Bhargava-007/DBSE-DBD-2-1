@@ -92,6 +92,7 @@ async function seedDatabase() {
         totalAccepted: 251454,
         authorId: setterUser._id,
         authorName: setterUser.name,
+        status: 'published' as const,
         isPublished: true,
         description: `Given an array of integers \`nums\` and an integer \`target\`, return indices of the two numbers such that they add up to \`target\`.
 
@@ -232,6 +233,7 @@ main();`,
         totalAccepted: 131352,
         authorId: setterUser._id,
         authorName: setterUser.name,
+        status: 'published' as const,
         isPublished: true,
         description: `You are given two **non-empty** lists representing two non-negative integers. The digits are stored in **reverse order**, and each contains a single digit. Add the two numbers and return the sum as a list.
 
@@ -377,6 +379,7 @@ main();`,
         totalAccepted: 103544,
         authorId: setterUser._id,
         authorName: setterUser.name,
+        status: 'published' as const,
         isPublished: true,
         description: `Given a string \`s\`, find the length of the **longest substring** without repeating characters.
 
@@ -513,6 +516,7 @@ main();`,
         totalAccepted: 71217,
         authorId: setterUser._id,
         authorName: setterUser.name,
+        status: 'published' as const,
         isPublished: true,
         description: `Given two sorted arrays \`nums1\` and \`nums2\` of size \`m\` and \`n\` respectively, return **the median** of the two sorted arrays.
 
@@ -657,6 +661,7 @@ main();`,
         totalAccepted: 149940,
         authorId: setterUser._id,
         authorName: setterUser.name,
+        status: 'published' as const,
         isPublished: true,
         description: `Given \`n\` non-negative integers representing an elevation map where the width of each bar is \`1\`, compute how much water it can trap after raining.`,
         constraints: [

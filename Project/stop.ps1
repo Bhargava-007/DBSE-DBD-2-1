@@ -8,8 +8,8 @@ Get-Process -Name 'node' -ErrorAction SilentlyContinue | ForEach-Object { Stop-P
 Write-Host "[2/3] Stopping MongoDB Database Daemon..." -ForegroundColor Yellow
 Get-Process -Name 'mongod' -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue; Write-Host "  Stopped MongoDB (PID: $($_.Id))" }
 
-Write-Host "[3/3] Releasing ports 4000, 4001, 4002, 5173..." -ForegroundColor Yellow
-$ports = @(4000, 4001, 4002, 5173)
+Write-Host "[3/3] Releasing ports 4000, 4001, 4002, 4003, 5173..." -ForegroundColor Yellow
+$ports = @(4000, 4001, 4002, 4003, 5173)
 foreach ($p in $ports) {
     $procs = (Get-NetTCPConnection -LocalPort $p -ErrorAction SilentlyContinue).OwningProcess
     if ($procs) {

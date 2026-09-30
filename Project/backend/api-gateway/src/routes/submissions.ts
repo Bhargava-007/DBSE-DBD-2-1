@@ -149,10 +149,11 @@ router.post(
       } catch (queueErr: any) {
         logger.error({ err: queueErr }, `[Submissions Route] BullMQ enqueue failure: ${queueErr.message}`);
         await Submission.findByIdAndDelete(submission._id);
-        return res.status(503).json({
+        res.status(503).json({
           success: false,
           message: 'Judge queue unavailable. Try again shortly.',
         });
+        return;
       }
 
       res.status(201).json({
