@@ -148,7 +148,7 @@ export const UserDashboard: React.FC = () => {
         <div className="flex items-center gap-2 text-[13px] text-[var(--text-2)] font-medium self-start md:self-auto flex-wrap">
           <span>Rating {currentUser.rating}</span>
           <span>·</span>
-          <span>Rank #{currentUser.rank || 0}</span>
+          <span>{currentUser.rank && currentUser.rank > 0 ? `Rank #${currentUser.rank}` : 'Unranked'}</span>
           <span>·</span>
           <span>{streak} day streak</span>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useJudge } from '../context/JudgeContext';
-import { Lock, User, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import { Lock, User, ArrowRight, ShieldCheck, AlertCircle, Loader2 } from 'lucide-react';
 
 interface DemoUser {
   label: string;
@@ -163,10 +163,13 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-primary w-full justify-center !h-[38px] !text-[13px] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary w-full justify-center !h-[38px] !text-[13px] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
+            {isLoading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : null}
             <span>{isLoading ? 'Signing In...' : 'Sign In'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
           </button>
         </form>
 

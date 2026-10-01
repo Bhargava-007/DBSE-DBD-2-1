@@ -27,8 +27,8 @@ import {
   Minimize2,
   Columns,
   Keyboard,
-  Sparkles,
-  Zap,
+  PlaySquare,
+  Activity,
   X
 } from 'lucide-react';
 
@@ -44,7 +44,9 @@ export const ProblemWorkspace: React.FC = () => {
     isRunningCode,
     isSubmitting,
     lastRunResults,
+    setLastRunResults,
     lastSubmissionResult,
+    setLastSubmissionResult,
   } = useJudge();
 
   const { slug } = useParams<{ slug: string }>();
@@ -134,6 +136,16 @@ export const ProblemWorkspace: React.FC = () => {
     setCustomInput('');
   }, [activeProblem?.id, problemKey, username]);
 
+  // Reset previous verdict and execution results when problem or user changes, or on unmount
+  useEffect(() => {
+    setLastRunResults(null);
+    setLastSubmissionResult(null);
+    return () => {
+      setLastRunResults(null);
+      setLastSubmissionResult(null);
+    };
+  }, [problemKey, username, setLastRunResults, setLastSubmissionResult]);
+
   // Clean up debounce timer on unmount
   useEffect(() => {
     return () => {
@@ -142,6 +154,22 @@ export const ProblemWorkspace: React.FC = () => {
       }
     };
   }, []);
+
+  const activeSubmission = useMemo(() => {
+    if (!lastSubmissionResult) return null;
+    const isMatchProblem = (
+      lastSubmissionResult.problemId === activeProblem?.id || 
+      lastSubmissionResult.problemTitle === activeProblem?.title ||
+      lastSubmissionResult.problemId === slug
+    );
+    const isMatchUser = (
+      !currentUser || 
+      !lastSubmissionResult.userId ||
+      lastSubmissionResult.userId === currentUser.id ||
+      lastSubmissionResult.username === currentUser.username
+    );
+    return (isMatchProblem && isMatchUser) ? lastSubmissionResult : null;
+  }, [lastSubmissionResult, activeProblem, slug, currentUser]);
 
   const currentCode = codeMap[language] ?? '';
 
@@ -410,7 +438,7 @@ export const ProblemWorkspace: React.FC = () => {
             }`}
             title="Dual-Engine Stress Tester (Press S)"
           >
-            <Zap className="w-3.5 h-3.5 text-[var(--amber)]" />
+            <Activity className="w-3.5 h-3.5 text-[var(--amber)]" />
             <span className="hidden sm:inline">Stress Test</span>
             <kbd className="hidden md:inline-block px-1 py-0.2 rounded bg-[var(--obsidian)] text-[10px] text-[var(--text-3)] border border-[var(--border)]">S</kbd>
           </button>
@@ -425,7 +453,7 @@ export const ProblemWorkspace: React.FC = () => {
             }`}
             title="Algorithm Visualizer (Press V)"
           >
-            <Sparkles className="w-3.5 h-3.5 text-[var(--verdigris)]" />
+            <PlaySquare className="w-3.5 h-3.5 text-[var(--verdigris)]" />
             <span className="hidden sm:inline">Visualizer</span>
             <kbd className="hidden md:inline-block px-1 py-0.2 rounded bg-[var(--obsidian)] text-[10px] text-[var(--text-3)] border border-[var(--border)]">V</kbd>
           </button>
@@ -549,7 +577,7 @@ export const ProblemWorkspace: React.FC = () => {
                 results={lastRunResults}
                 isRunning={isRunningCode}
                 isSubmitting={isSubmitting}
-                lastSubmission={lastSubmissionResult}
+                lastSubmission={activeSubmission}
                 customInput={customInput}
                 onCustomInputChange={setCustomInput}
                 isOpen={isConsoleOpen}
@@ -569,12 +597,12 @@ export const ProblemWorkspace: React.FC = () => {
         onRun={handleRun}
         onSubmit={handleSubmit}
         lastResults={lastRunResults}
-        lastSubmission={lastSubmissionResult}
+        lastSubmission={activeSubmission}
       />
 
       {/* Shortcuts Modal Dialog */}
       {showShortcutsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--obsidian)]/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-sm rounded-[var(--r-lg)] bg-[var(--ash)] border border-[var(--border-strong)] p-5 shadow-[var(--shadow-lg)] space-y-4 page-fade">
             <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
               <div className="flex items-center gap-2">

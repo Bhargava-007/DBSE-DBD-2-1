@@ -46,9 +46,11 @@ export interface Problem {
   description: string;
   constraints: string[];
   sampleTestCases: TestCase[];
+  hiddenTestCases?: TestCase[];
   hiddenTestCasesCount: number;
   starterCode: Record<SupportedLanguage, string>;
   status?: ProblemStatus;
+  editorial?: string;
   submissionsCount: number;
   totalAccepted: number;
   author: string;

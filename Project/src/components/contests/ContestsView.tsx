@@ -57,7 +57,7 @@ export const ContestsView: React.FC = () => {
             </h1>
             {liveContests.length > 0 && (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--accent-dim)] border border-[var(--accent-border)] text-xs font-mono text-[var(--verdigris)] font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--verdigris)] pulse-dot" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--verdigris)]" />
                 Live Round Active
               </span>
             )}
@@ -103,7 +103,7 @@ export const ContestsView: React.FC = () => {
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2.5 flex-wrap">
                       <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent-dim)] text-[var(--verdigris)] border border-[var(--accent-border)] text-xs font-mono font-semibold flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--verdigris)] pulse-dot" />
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--verdigris)]" />
                         Live Now
                       </span>
                       <h3 className="text-lg sm:text-xl font-bold text-[var(--bone)] tracking-tight">

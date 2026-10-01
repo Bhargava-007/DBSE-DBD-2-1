@@ -16,7 +16,6 @@ import {
   CheckCircle2,
   XCircle,
   Terminal,
-  Layers,
   Clock,
   Cpu,
   ChevronRight,
@@ -355,7 +354,7 @@ export const SubmissionsView: React.FC = () => {
                       onClick={() => handleOpenSubmission(sub)}
                       className={`h-[52px] cursor-pointer transition-colors border-b border-[var(--border)] last:border-0 ${
                         isSelected 
-                          ? 'bg-[var(--accent-dim)]/50' 
+                          ? 'bg-[var(--accent-dim)]' 
                           : 'hover:bg-[var(--ash)]'
                       }`}
                     >
@@ -522,7 +521,7 @@ export const SubmissionsView: React.FC = () => {
           </div>
 
           {/* Telemetry Metrics Row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-mono">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
             <div className="p-3 rounded-[var(--r-md)] bg-[var(--ash)] border border-[var(--border)] flex items-center gap-3">
               <div className="p-2 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--verdigris)]">
                 <Clock className="w-4 h-4" />
@@ -554,16 +553,6 @@ export const SubmissionsView: React.FC = () => {
                     ? `${inspectSubmission.totalTestCases || 3} / ${inspectSubmission.totalTestCases || 3} Passed`
                     : `${inspectSubmission.testCasesPassed ?? 0} / ${inspectSubmission.totalTestCases || 3} Passed`}
                 </div>
-              </div>
-            </div>
-
-            <div className="p-3 rounded-[var(--r-md)] bg-[var(--ash)] border border-[var(--border)] flex items-center gap-3">
-              <div className="p-2 rounded bg-[var(--carbon)] border border-[var(--border)] text-[var(--bone)]">
-                <Layers className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-[11px] uppercase text-[var(--text-3)] font-medium">Sandbox Isolation</div>
-                <div className="font-bold text-[var(--verdigris)] text-sm">gVisor Secure</div>
               </div>
             </div>
           </div>

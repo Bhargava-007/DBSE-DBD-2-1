@@ -25,6 +25,14 @@ export const CommandPalette: React.FC = () => {
     }
   }, [isCommandPaletteOpen]);
 
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsCommandPaletteOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [setIsCommandPaletteOpen]);
+
   const filteredProblems = problems.filter(p => {
     const q = query.toLowerCase();
     return (
@@ -56,15 +64,14 @@ export const CommandPalette: React.FC = () => {
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+      className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 bg-[var(--obsidian)]/80 backdrop-blur-sm"
     >
       <div 
         className="fixed inset-0" 
         onClick={() => setIsCommandPaletteOpen(false)} 
       />
       <div 
-        className="relative w-full max-w-[560px] bg-[var(--bg-elevated)] border border-[var(--border-mid)] rounded-[var(--r-xl)] shadow-[var(--shadow-lg)] overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150"
+        className="relative w-full max-w-[560px] bg-[var(--bg-elevated)] border border-[var(--border-mid)] rounded-[var(--r-xl)] shadow-[var(--shadow-lg)] overflow-hidden z-10 page-fade"
       >
         
         {/* Search Input Bar */}

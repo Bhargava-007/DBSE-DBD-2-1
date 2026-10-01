@@ -10,8 +10,8 @@ import {
   Cpu,
   Terminal,
   Activity,
-  Sparkles,
-  Zap,
+  Bookmark,
+  BookOpen,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
@@ -121,7 +121,7 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent-dim)] text-[var(--verdigris)] font-semibold border border-[var(--accent-border)] flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--verdigris)] pulse-dot" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--verdigris)]" />
                 LIVE TOURNAMENT ARENA
               </span>
               <span className="text-[var(--text-3)] font-mono">
@@ -166,7 +166,7 @@ export const HomePage: React.FC = () => {
           <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-[var(--accent-dim)] text-[var(--verdigris)] font-semibold border border-[var(--accent-border)] flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-[var(--verdigris)]" />
+                <Bookmark className="w-3 h-3 text-[var(--verdigris)]" />
                 EDITORIAL PRIME RECOMMENDATION
               </span>
               <span className="text-[var(--text-3)]">·</span>
@@ -244,7 +244,7 @@ export const HomePage: React.FC = () => {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-[var(--verdigris)]" />
+              <BookOpen className="w-4 h-4 text-[var(--verdigris)]" />
               <h3 className="text-sm font-semibold font-mono tracking-wider uppercase text-[var(--bone)]">
                 Curated Problemset Dossier
               </h3>
@@ -357,7 +357,7 @@ export const HomePage: React.FC = () => {
 
       {/* Editorial Footer Note */}
       <div className="text-center pt-6 text-xs font-mono text-[var(--text-3)]">
-        CODE JUDGED DETERMINISTICALLY IN ISOLATED SANDBOXES · MEMORY CHECKED TO THE KILOBYTE
+        Deterministic execution · Isolated sandboxes · Memory limits enforced
       </div>
     </div>
   );

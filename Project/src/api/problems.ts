@@ -131,3 +131,10 @@ export const updateProblem = async (id: string, payload: Partial<CreateProblemPa
   const response = await apiClient.put(`/problems/${id}`, payload);
   return normalizeProblem(response.data.data);
 };
+
+/**
+ * Delete an existing problem (Admin and Setter)
+ */
+export const deleteProblem = async (id: string): Promise<void> => {
+  await apiClient.delete(`/problems/${id}`);
+};

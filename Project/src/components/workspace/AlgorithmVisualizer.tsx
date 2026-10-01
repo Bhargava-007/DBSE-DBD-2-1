@@ -7,7 +7,7 @@ import {
   ChevronLeft, 
   ChevronRight, 
   X, 
-  Sparkles, 
+  PlaySquare, 
   Layers
 } from 'lucide-react';
 
@@ -233,7 +233,132 @@ function generateTwoPointerSteps(): VisualStep[] {
 /**
  * Step generator for Sliding Window
  */
-function generateSlidingWindowSteps(): VisualStep[] {
+function generateSlidingWindowSteps(problem?: Problem): VisualStep[] {
+  const isStringProblem = problem && (
+    problem.slug.toLowerCase().includes('substring') || 
+    problem.slug.toLowerCase().includes('string') ||
+    (problem.tags || []).some(t => t.toLowerCase().includes('string'))
+  );
+
+  if (isStringProblem) {
+    const chars = ['a', 'b', 'c', 'a', 'b', 'c', 'b', 'b'];
+    return [
+      {
+        stepIndex: 0,
+        title: 'Initialize Window [0..0]',
+        description: "Start with index 0 ('a'). Set contains {'a'}. Substring: \"a\" (length 1).",
+        codeLine: 'int left = 0; set.insert(s[right]);',
+        array: chars,
+        activeIndices: [0],
+        windowRange: [0, 0],
+        pointers: {
+          wStart: { index: 0, label: 'L (0)', color: 'var(--verdigris)' },
+          wEnd: { index: 0, label: 'R (0)', color: 'var(--amber)' },
+        },
+        variables: { window: '"a"', maxLen: 1, left: 0, right: 0 },
+      },
+      {
+        stepIndex: 1,
+        title: "Expand Window to [0..1] ('b')",
+        description: "Char 'b' is unique in window. Expand right pointer. Substring: \"ab\" (length 2).",
+        codeLine: 'right++; maxLen = max(maxLen, right - left + 1);',
+        array: chars,
+        activeIndices: [0, 1],
+        windowRange: [0, 1],
+        pointers: {
+          wStart: { index: 0, label: 'L (0)', color: 'var(--verdigris)' },
+          wEnd: { index: 1, label: 'R (1)', color: 'var(--amber)' },
+        },
+        variables: { window: '"ab"', maxLen: 2, left: 0, right: 1 },
+      },
+      {
+        stepIndex: 2,
+        title: "Expand Window to [0..2] ('c') — Max Window Found",
+        description: "Char 'c' is unique. Expand right pointer. Substring: \"abc\" (length 3). Update maxLen = 3.",
+        codeLine: 'right++; maxLen = max(maxLen, right - left + 1); // maxLen = 3',
+        array: chars,
+        activeIndices: [0, 1, 2],
+        windowRange: [0, 2],
+        pointers: {
+          wStart: { index: 0, label: 'L (0)', color: 'var(--green)' },
+          wEnd: { index: 2, label: 'R (2)', color: 'var(--green)' },
+        },
+        variables: { window: '"abc"', maxLen: 3, left: 0, right: 2, isNewMax: true },
+      },
+      {
+        stepIndex: 3,
+        title: "Duplicate Encountered: 'a' at idx 3 -> Shrink Left",
+        description: "Char 'a' is already in window. Advance left pointer past previous occurrence (left = 1). Window: \"bca\" (length 3).",
+        codeLine: 'while (set.count(s[right])) set.erase(s[left++]);',
+        array: chars,
+        activeIndices: [1, 2, 3],
+        windowRange: [1, 3],
+        dimmedIndices: [0],
+        pointers: {
+          wStart: { index: 1, label: 'L (1)', color: 'var(--verdigris)' },
+          wEnd: { index: 3, label: 'R (3)', color: 'var(--amber)' },
+        },
+        variables: { window: '"bca"', maxLen: 3, left: 1, right: 3 },
+      },
+      {
+        stepIndex: 4,
+        title: "Duplicate Encountered: 'b' at idx 4 -> Shrink Left",
+        description: "Char 'b' is already in window. Advance left pointer past previous occurrence (left = 2). Window: \"cab\" (length 3).",
+        codeLine: 'while (set.count(s[right])) set.erase(s[left++]);',
+        array: chars,
+        activeIndices: [2, 3, 4],
+        windowRange: [2, 4],
+        dimmedIndices: [0, 1],
+        pointers: {
+          wStart: { index: 2, label: 'L (2)', color: 'var(--verdigris)' },
+          wEnd: { index: 4, label: 'R (4)', color: 'var(--amber)' },
+        },
+        variables: { window: '"cab"', maxLen: 3, left: 2, right: 4 },
+      },
+      {
+        stepIndex: 5,
+        title: "Duplicate Encountered: 'c' at idx 5 -> Shrink Left",
+        description: "Char 'c' is in window. Advance left pointer (left = 3). Window: \"abc\" (length 3).",
+        codeLine: 'while (set.count(s[right])) set.erase(s[left++]);',
+        array: chars,
+        activeIndices: [3, 4, 5],
+        windowRange: [3, 5],
+        dimmedIndices: [0, 1, 2],
+        pointers: {
+          wStart: { index: 3, label: 'L (3)', color: 'var(--verdigris)' },
+          wEnd: { index: 5, label: 'R (5)', color: 'var(--amber)' },
+        },
+        variables: { window: '"abc"', maxLen: 3, left: 3, right: 5 },
+      },
+      {
+        stepIndex: 6,
+        title: "Duplicate Encountered: 'b' at idx 6 -> Shrink Left",
+        description: "Char 'b' is in window. Advance left pointer to index 5. Window: \"cb\" (length 2).",
+        codeLine: 'while (set.count(s[right])) set.erase(s[left++]);',
+        array: chars,
+        activeIndices: [5, 6],
+        windowRange: [5, 6],
+        dimmedIndices: [0, 1, 2, 3, 4],
+        pointers: {
+          wStart: { index: 5, label: 'L (5)', color: 'var(--verdigris)' },
+          wEnd: { index: 6, label: 'R (6)', color: 'var(--amber)' },
+        },
+        variables: { window: '"cb"', maxLen: 3, left: 5, right: 6 },
+      },
+      {
+        stepIndex: 7,
+        title: 'Sliding Window Finished',
+        description: 'Scanned all characters. Maximum non-repeating substring length is 3 ("abc"). Time complexity: O(N).',
+        codeLine: 'return maxLen; // Result: 3',
+        array: chars,
+        activeIndices: [0, 1, 2],
+        windowRange: [0, 2],
+        foundIndex: 0,
+        variables: { result: 3, optimalSubstring: '"abc"', timeComplexity: 'O(N)' },
+      },
+    ];
+  }
+
   const arr = [2, 1, 5, 2, 8, 1, 4];
   const k = 3;
 
@@ -502,6 +627,15 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1200); // ms per step
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   // Sync detected pattern when problem changes
   useEffect(() => {
     setSelectedPattern(detectedPattern);
@@ -515,7 +649,7 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
       case 'two-pointers':
         return generateTwoPointerSteps();
       case 'sliding-window':
-        return generateSlidingWindowSteps();
+        return generateSlidingWindowSteps(problem);
       case 'stack-queue':
         return generateStackQueueSteps();
       case 'binary-search':
@@ -524,7 +658,7 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
       default:
         return generateArrayTraversalSteps();
     }
-  }, [selectedPattern]);
+  }, [selectedPattern, problem]);
 
   const currentStep = steps[currentStepIdx] || steps[0];
 
@@ -568,14 +702,14 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 select-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--obsidian)]/80 backdrop-blur-sm p-4 select-none">
       <div className="w-full max-w-4xl max-h-[90vh] flex flex-col rounded-[var(--r-lg)] bg-[var(--carbon)] border border-[var(--border-strong)] shadow-2xl overflow-hidden page-fade">
         
         {/* Visualizer Top Bar */}
         <div className="h-12 border-b border-[var(--border)] bg-[var(--ash)] px-4 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 rounded-[var(--r-sm)] bg-[var(--accent-dim)] border border-[var(--accent-border)] flex items-center justify-center text-[var(--verdigris)]">
-              <Sparkles className="w-4 h-4" />
+              <PlaySquare className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -681,7 +815,7 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
                           <div 
                             key={key}
                             style={{ borderColor: ptr.color, color: ptr.color }}
-                            className="text-[10px] font-mono font-bold px-1 py-0.5 rounded bg-[var(--ash)] border transition-all animate-bounce shadow-xs inline-block truncate max-w-full"
+                            className="text-[10px] font-mono font-bold px-1 py-0.5 rounded bg-[var(--ash)] border transition-all duration-150 shadow-xs inline-block truncate max-w-full"
                           >
                             {ptr.label}
                           </div>
@@ -693,31 +827,22 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
 
                 {/* Array Elements Row with CSS Animated Transitions */}
                 <div className="flex items-center justify-center gap-2 sm:gap-3.5 flex-wrap relative p-2">
-                  
-                  {/* Sliding Window Highlight Bounding Box */}
-                  {currentStep.windowRange && (
-                    <div 
-                      className="absolute inset-y-1 rounded-[var(--r-md)] border-2 border-[var(--verdigris)] bg-[var(--accent-dim)]/20 pointer-events-none transition-all duration-300 shadow-[0_0_15px_rgba(20,184,166,0.2)]"
-                      style={{
-                        left: `calc(${currentStep.windowRange[0]} * (2.5rem + 0.5rem) + 0.25rem)`,
-                        width: `calc((${currentStep.windowRange[1]} - ${currentStep.windowRange[0]} + 1) * 3rem - 0.5rem)`,
-                      }}
-                    />
-                  )}
-
                   {currentStep.array.map((val, idx) => {
                     const isActive = currentStep.activeIndices?.includes(idx);
                     const isDimmed = currentStep.dimmedIndices?.includes(idx);
                     const isFound = currentStep.foundIndex === idx;
+                    const isInWindow = currentStep.windowRange && idx >= currentStep.windowRange[0] && idx <= currentStep.windowRange[1];
 
                     return (
                       <div
                         key={idx}
-                        className={`w-10 h-12 sm:w-12 sm:h-14 rounded-[var(--r-md)] flex flex-col items-center justify-center font-mono font-bold text-sm transition-all duration-300 relative border ${
+                        className={`w-10 h-12 sm:w-12 sm:h-14 rounded-[var(--r-md)] flex flex-col items-center justify-center font-mono font-bold text-sm transition-all duration-200 relative border ${
                           isFound
-                            ? 'bg-[var(--green-dim)] text-[var(--green)] border-[var(--green)] scale-110 shadow-lg ring-2 ring-[var(--green)]/50'
+                            ? 'bg-[var(--green-dim)] text-[var(--green)] border-[var(--green)] scale-105 shadow-md ring-1 ring-[var(--green)]/50'
+                            : isInWindow
+                            ? 'bg-[var(--accent-dim)] text-[var(--bone)] border-[var(--verdigris)] shadow-sm'
                             : isActive
-                            ? 'bg-[var(--ash)] text-[var(--bone)] border-[var(--verdigris)] scale-105 shadow-md ring-1 ring-[var(--verdigris)]/40'
+                            ? 'bg-[var(--ash)] text-[var(--bone)] border-[var(--verdigris)] shadow-sm'
                             : isDimmed
                             ? 'bg-[var(--obsidian)] text-[var(--text-3)] border-[var(--border)] opacity-35'
                             : 'bg-[var(--obsidian)] text-[var(--bone)] border-[var(--border)] hover:border-[var(--text-3)]'
@@ -751,7 +876,7 @@ export const AlgorithmVisualizer: React.FC<Props> = ({ problem, isOpen, onClose 
                     currentStep.stack.map((item, idx) => (
                       <div 
                         key={idx}
-                        className="w-full py-1.5 text-center font-mono text-xs font-bold rounded bg-[var(--accent-dim)] border border-[var(--verdigris)] text-[var(--verdigris)] transition-all duration-300 animate-fadeIn"
+                        className="w-full py-1.5 text-center font-mono text-xs font-bold rounded bg-[var(--accent-dim)] border border-[var(--verdigris)] text-[var(--verdigris)] transition-all duration-300"
                       >
                         {item} {idx === currentStep.stack!.length - 1 && '← Top'}
                       </div>

@@ -12,7 +12,6 @@ import {
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
-  Sparkles,
   Search,
   Plus,
   Trash2,
@@ -269,7 +268,7 @@ export const CreateContestPage: React.FC = () => {
           >
             {isSubmitting ? (
               <>
-                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="w-3.5 h-3.5 border-2 border-[var(--bone)]/30 border-t-[var(--bone)] rounded-full animate-spin" />
                 <span>Scheduling Contest...</span>
               </>
             ) : (
@@ -299,7 +298,7 @@ export const CreateContestPage: React.FC = () => {
           {/* General Info Card */}
           <div className="card p-5 space-y-4">
             <h2 className="text-sm font-semibold text-[var(--text-1)] flex items-center gap-2 border-b border-[var(--border)] pb-2.5">
-              <Sparkles className="w-4 h-4 text-[var(--accent)]" /> Contest Overview
+              <Trophy className="w-4 h-4 text-[var(--accent)]" /> Contest Overview
             </h2>
 
             {/* Title */}
@@ -624,7 +623,7 @@ export const CreateContestPage: React.FC = () => {
             <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
               {loadingProblems ? (
                 <div className="py-8 text-center text-xs text-[var(--text-3)]">
-                  <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin inline-block mr-2 align-middle" />
+                  <span className="w-4 h-4 border-2 border-[var(--bone)]/30 border-t-[var(--bone)] rounded-full animate-spin inline-block mr-2 align-middle" />
                   Loading problem catalog...
                 </div>
               ) : filteredProblems.length === 0 ? (
@@ -693,7 +692,7 @@ export const CreateContestPage: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="w-3.5 h-3.5 border-2 border-[var(--bone)]/30 border-t-[var(--bone)] rounded-full animate-spin" />
                   <span>Scheduling Contest...</span>
                 </>
               ) : (

@@ -23,7 +23,9 @@ import {
   FileText,
   Eye,
   Calendar,
-  Clock
+  Clock,
+  Trash2,
+  X
 } from 'lucide-react';
 import { useJudge } from '../context/JudgeContext';
 import { renderMarkdownToHtml } from '../utils/markdownRenderer';
@@ -139,6 +141,7 @@ export const AdminPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [roleUpdating, setRoleUpdating] = useState<string | null>(null);
+  const [deletingProblemId, setDeletingProblemId] = useState<string | null>(null);
 
   // Search states
   const [problemSearch, setProblemSearch] = useState<string>('');
@@ -161,6 +164,15 @@ export const AdminPage: React.FC = () => {
   const [plagiarismError, setPlagiarismError] = useState<string | null>(null);
   const [matrixFilterProblem, setMatrixFilterProblem] = useState<string>('All');
   const [selectedPair, setSelectedPair] = useState<SuspiciousMatch | null>(null);
+
+  // Escape key handler
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedPair(null);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, []);
 
   const fetchStats = useCallback(async () => {
     try {
@@ -207,6 +219,26 @@ export const AdminPage: React.FC = () => {
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.response?.data?.error || 'Failed to update problem status.');
+    }
+  };
+
+  const handleDeleteProblem = async (problemId: string, problemTitle: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete "${problemTitle}"? This cannot be undone.`)) {
+      return;
+    }
+    setDeletingProblemId(problemId);
+    try {
+      const res = await apiClient.delete(`/problems/${problemId}`);
+      if (res.data.success) {
+        setProblems(prev => prev.filter(p => (p._id || p.id) !== problemId));
+        fetchStats();
+      } else {
+        setError(res.data.error || 'Failed to delete problem.');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to delete problem.');
+    } finally {
+      setDeletingProblemId(null);
     }
   };
 
@@ -701,7 +733,7 @@ export const AdminPage: React.FC = () => {
                         <div className="text-[11px] text-[var(--text-3)]">{accepted} AC</div>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Link
                             to={`/admin/problems/${problemId}/edit`}
                             className="btn-secondary !text-xs !py-1 !px-2.5 flex items-center gap-1.5 font-mono text-[var(--verdigris)] hover:border-[var(--verdigris)]"
@@ -711,11 +743,24 @@ export const AdminPage: React.FC = () => {
                           </Link>
                           <Link
                             to={`/problems/${p.slug || problemId}`}
-                            className="text-[var(--text-3)] hover:text-[var(--bone)] p-1 transition-colors"
+                            className="text-[var(--text-3)] hover:text-[var(--bone)] p-1.5 transition-colors rounded hover:bg-[var(--ash)]"
                             title="View in Problem Workspace"
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteProblem(problemId, p.title)}
+                            disabled={deletingProblemId === problemId}
+                            className="p-1.5 text-[var(--text-3)] hover:text-[var(--red)] hover:bg-[var(--red-dim)] rounded transition-colors cursor-pointer disabled:opacity-50"
+                            title="Delete Problem"
+                          >
+                            {deletingProblemId === problemId ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1307,9 +1352,9 @@ export const AdminPage: React.FC = () => {
                                 cell.val === 0 
                                   ? 'text-[var(--text-4)] bg-[var(--carbon)]' 
                                   : isHigh 
-                                  ? 'bg-[var(--red-dim)] text-[var(--red)] font-bold hover:bg-[var(--red)] hover:text-white' 
+                                  ? 'bg-[var(--red-dim)] text-[var(--red)] font-bold hover:bg-[var(--red)] hover:text-[var(--obsidian)]' 
                                   : isModerate 
-                                  ? 'bg-[var(--amber-dim)] text-[var(--amber)] font-bold hover:bg-[var(--amber)] hover:text-black' 
+                                  ? 'bg-[var(--amber-dim)] text-[var(--amber)] font-bold hover:bg-[var(--amber)] hover:text-[var(--obsidian)]' 
                                   : 'bg-[var(--accent-dim)] text-[var(--verdigris)] hover:bg-[var(--verdigris)] hover:text-[var(--obsidian)]'
                               }`}
                               title={cell.val > 0 ? `${u1} vs ${u2}: ${(cell.val * 100).toFixed(1)}% similarity` : 'No flagged match'}
@@ -1430,8 +1475,7 @@ export const AdminPage: React.FC = () => {
           {/* Pair Inspector Detail Modal */}
           {selectedPair && (
             <div 
-              className="fixed inset-0 z-50 flex items-center justify-center p-4"
-              style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--obsidian)]/80 backdrop-blur-sm"
             >
               <div 
                 className="fixed inset-0" 
@@ -1452,9 +1496,9 @@ export const AdminPage: React.FC = () => {
                   </div>
                   <button 
                     onClick={() => setSelectedPair(null)}
-                    className="p-1 rounded text-[var(--text-3)] hover:text-[var(--bone)]"
+                    className="p-1 rounded text-[var(--text-3)] hover:text-[var(--bone)] cursor-pointer"
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
 

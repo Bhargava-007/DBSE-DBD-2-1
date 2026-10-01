@@ -14,8 +14,8 @@ import {
   ArrowLeft,
   AlertCircle,
   FileCode,
+  FileCode2,
   CheckCircle2,
-  Sparkles,
   Loader2,
   Save,
 } from 'lucide-react';
@@ -106,6 +106,7 @@ export const EditProblemPage: React.FC = () => {
 
   // Submission status
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -309,6 +310,21 @@ export const EditProblemPage: React.FC = () => {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    if (!window.confirm(`Are you sure you want to permanently delete "${title || 'this problem'}"? This cannot be undone.`)) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await apiClient.delete(`/problems/${id}`);
+      navigate('/admin');
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to delete problem.');
+      setIsDeleting(false);
+    }
+  };
+
   const languageTabs: { lang: SupportedLanguage; label: string }[] = [
     { lang: 'python', label: 'Python 3' },
     { lang: 'cpp', label: 'C++ 20' },
@@ -388,18 +404,29 @@ export const EditProblemPage: React.FC = () => {
             </select>
           </div>
 
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={isDeleting || isSubmitting}
+            className="btn-secondary !text-xs !py-2 flex items-center gap-1.5 text-[var(--red)] hover:border-[var(--red)] hover:bg-[var(--red-dim)] disabled:opacity-50"
+            title="Permanently Delete Problem"
+          >
+            {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            <span>Delete</span>
+          </button>
+
           <Link to="/admin" className="btn-secondary !text-xs !py-2">
             Cancel
           </Link>
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isDeleting}
             className="btn-primary !text-xs !py-2 flex items-center gap-2"
           >
             {isSubmitting ? (
               <>
-                <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span className="w-3.5 h-3.5 border-2 border-[var(--bone)]/30 border-t-[var(--bone)] rounded-full animate-spin" />
                 <span>Saving Changes...</span>
               </>
             ) : savedSuccess ? (
@@ -441,7 +468,7 @@ export const EditProblemPage: React.FC = () => {
           {/* General Metadata Card */}
           <div className="card p-5 space-y-4">
             <h2 className="text-sm font-semibold text-[var(--text-1)] flex items-center gap-2 border-b border-[var(--border)] pb-2.5">
-              <Sparkles className="w-4 h-4 text-[var(--accent)]" /> Problem Metadata
+              <FileCode2 className="w-4 h-4 text-[var(--accent)]" /> Problem Metadata
             </h2>
 
             {/* Title */}
@@ -733,7 +760,7 @@ export const EditProblemPage: React.FC = () => {
             </div>
 
             {showHidden && (
-              <div className="space-y-4 pt-3 border-t border-[var(--border)] animate-in fade-in duration-150">
+              <div className="space-y-4 pt-3 border-t border-[var(--border)] page-fade">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[var(--text-3)]">
                     Define rigorous edge cases, maximum constraints, and edge values.
@@ -870,7 +897,7 @@ export const EditProblemPage: React.FC = () => {
             >
               {isSubmitting ? (
                 <>
-                  <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="w-3.5 h-3.5 border-2 border-[var(--bone)]/30 border-t-[var(--bone)] rounded-full animate-spin" />
                   <span>Saving Problem...</span>
                 </>
               ) : savedSuccess ? (

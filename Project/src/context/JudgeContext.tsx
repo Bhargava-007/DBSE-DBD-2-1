@@ -43,7 +43,9 @@ interface JudgeContextType {
   apiError: string | null;
   setApiError: (err: string | null) => void;
   lastRunResults: TestCaseResult[] | null;
+  setLastRunResults: (results: TestCaseResult[] | null) => void;
   lastSubmissionResult: Submission | null;
+  setLastSubmissionResult: (submission: Submission | null) => void;
   
   theme: 'light' | 'dark';
   toggleTheme: () => void;
@@ -60,6 +62,7 @@ interface JudgeContextType {
   submitSolution: (problem: Problem, language: SupportedLanguage, code: string, contestId?: string) => Promise<Submission>;
   isProblemSolved: (problemId: string) => boolean;
   addNewProblem: (newProblem: Problem) => Promise<void>;
+  deleteProblem: (id: string) => Promise<void>;
 }
 
 const JudgeContext = createContext<JudgeContextType | undefined>(undefined);
@@ -248,6 +251,8 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         localStorage.removeItem('user');
       }
       setCurrentUser(data.user);
+      setLastRunResults(null);
+      setLastSubmissionResult(null);
       connectContestSocket();
       setIsAuthModalOpen(false);
     } catch (err: any) {
@@ -271,6 +276,8 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
       setCurrentUser(data.user);
+      setLastRunResults(null);
+      setLastSubmissionResult(null);
       connectContestSocket();
       setIsAuthModalOpen(false);
     } catch (err: any) {
@@ -282,6 +289,8 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const logoutUser = () => {
     setCurrentUser(null);
+    setLastRunResults(null);
+    setLastSubmissionResult(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('algoflow_token');
@@ -459,12 +468,27 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         tags: newProblem.tags,
         constraints: newProblem.constraints,
         sampleTestCases: newProblem.sampleTestCases,
+        hiddenTestCases: newProblem.hiddenTestCases,
         starterCode: newProblem.starterCode,
+        status: newProblem.status,
       });
       setProblems(prev => [created, ...prev]);
     } catch {
       console.warn('[JudgeContext] Backend createProblem unavailable, saving to local state.');
       setProblems(prev => [newProblem, ...prev]);
+    }
+  };
+
+  // 9. Delete Problem Handler
+  const deleteProblem = async (id: string) => {
+    try {
+      await problemsApi.deleteProblem(id);
+      setProblems(prev => prev.filter(p => (p.id !== id && p.slug !== id)));
+    } catch (err: any) {
+      console.error('[JudgeContext] Delete problem error:', err);
+      // Still filter from local state
+      setProblems(prev => prev.filter(p => (p.id !== id && p.slug !== id)));
+      throw err;
     }
   };
 
@@ -496,7 +520,9 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         theme,
         toggleTheme,
         lastRunResults,
+        setLastRunResults,
         lastSubmissionResult,
+        setLastSubmissionResult,
         loginUser,
         registerUser,
         logoutUser,
@@ -506,6 +532,7 @@ export const JudgeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         submitSolution,
         isProblemSolved,
         addNewProblem,
+        deleteProblem,
       }}
     >
       {children}

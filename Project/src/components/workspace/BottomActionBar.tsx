@@ -104,7 +104,7 @@ export const BottomActionBar: React.FC<Props> = ({
         ) : (
           <div className="flex items-center gap-2 text-[var(--text-3)] text-xs">
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--verdigris)] inline-block" />
-            <span>SANDBOX READY · 4 RUNTIMES ACTIVE</span>
+            <span>Ready</span>
           </div>
         )}
       </div>

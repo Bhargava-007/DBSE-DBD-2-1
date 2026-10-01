@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useJudge } from '../../context/JudgeContext';
-import { Lock, Mail, User, X, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Lock, Mail, User, X, ArrowRight, ShieldCheck, Loader2 } from 'lucide-react';
 interface DemoUser {
   label: string;
   username: string;
@@ -30,6 +30,14 @@ export const AuthModal: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsAuthModalOpen(false);
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [setIsAuthModalOpen]);
 
   if (!isAuthModalOpen) return null;
 
@@ -73,15 +81,12 @@ export const AuthModal: React.FC = () => {
   };
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--obsidian)]/80 backdrop-blur-sm">
       <div 
         className="fixed inset-0" 
         onClick={() => setIsAuthModalOpen(false)} 
       />
-      <div className="relative w-full max-w-[420px] rounded-[var(--r-xl)] bg-[var(--bg-elevated)] border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden z-10 space-y-5 p-6 animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-[420px] rounded-[var(--r-xl)] bg-[var(--bg-elevated)] border border-[var(--border)] shadow-[var(--shadow-lg)] overflow-hidden z-10 space-y-5 p-6 page-fade">
         
         {/* Header with Tab switcher */}
         <div className="flex items-center justify-between border-b border-[var(--border)] pb-4">
@@ -201,10 +206,19 @@ export const AuthModal: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-primary w-full justify-center !h-[38px] !text-[13px]"
+            className="btn-primary w-full justify-center !h-[38px] !text-[13px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>{authModalMode === 'login' ? 'Sign In' : 'Create Account'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {isLoading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>{authModalMode === 'login' ? 'Signing In...' : 'Creating Account...'}</span>
+              </>
+            ) : (
+              <>
+                <span>{authModalMode === 'login' ? 'Sign In' : 'Create Account'}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
           </button>
         </form>
 

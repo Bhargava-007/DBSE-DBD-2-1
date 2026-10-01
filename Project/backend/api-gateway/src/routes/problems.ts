@@ -293,17 +293,18 @@ router.put(
 
 /**
  * DELETE /api/problems/:id
- * Delete a problem (Admin only)
+ * Delete a problem (Admin and Setter)
  */
 router.delete(
   '/:id',
   authenticate,
-  authorize('admin'),
+  authorize('admin', 'setter'),
   async (req: AuthRequest, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
-      const problem = await Problem.findByIdAndDelete(id);
+      const query = /^[0-9a-fA-F]{24}$/.test(id) ? { _id: id } : { slug: id.toLowerCase() };
 
+      const problem = await Problem.findOne(query);
       if (!problem) {
         res.status(404).json({
           success: false,
@@ -311,6 +312,17 @@ router.delete(
         });
         return;
       }
+
+      // If user is setter, verify author ownership
+      if (req.user?.role === 'setter' && problem.authorId && problem.authorId.toString() !== req.userId?.toString()) {
+        res.status(403).json({
+          success: false,
+          error: 'You do not have permission to delete problems created by other authors.',
+        });
+        return;
+      }
+
+      await Problem.deleteOne({ _id: problem._id });
 
       res.status(200).json({
         success: true,

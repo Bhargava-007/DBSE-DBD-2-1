@@ -444,24 +444,66 @@ An **anagram** is a word or phrase formed by rearranging the letters of a differ
 
 #### Sample Test Cases (Visible to Contestants)
 - **Sample 1**:
-  - Input: `anagram\nnagaram`
-  - Expected Output: `true`
-  - Explanation: `Both strings contain 3 'a's, 1 'n', 1 'g', 1 'r', and 1 'm'.`
+  - **Input (stdin)**:
+```text
+anagram
+nagaram
+```
+  - **Expected Output (stdout)**: `true`
+  - **Explanation**: `Both strings contain 3 'a's, 1 'n', 1 'g', 1 'r', and 1 'm'.`
 - **Sample 2**:
-  - Input: `rat\ncar`
-  - Expected Output: `false`
-  - Explanation: `'r' and 'a' match, but 't' does not match 'c'.`
+  - **Input (stdin)**:
+```text
+rat
+car
+```
+  - **Expected Output (stdout)**: `false`
+  - **Explanation**: `'r' and 'a' match, but 't' does not match 'c'.`
 - **Sample 3**:
-  - Input: `listen\nsilent`
-  - Expected Output: `true`
-  - Explanation: `Rearranging 'listen' forms 'silent'.`
+  - **Input (stdin)**:
+```text
+listen
+silent
+```
+  - **Expected Output (stdout)**: `true`
+  - **Explanation**: `Rearranging 'listen' forms 'silent'.`
 
 #### Hidden Test Cases (System Verification Suite)
-- **Hidden 1**: Input: `a\na` | Expected: `true`
-- **Hidden 2**: Input: `ab\na` | Expected: `false`
-- **Hidden 3**: Input: `aa\nbb` | Expected: `false`
-- **Hidden 4**: Input: `aacc\ncca` | Expected: `false`
-- **Hidden 5**: Input: `orchestra\ncarthorse` | Expected: `true`
+- **Hidden 1**:
+  - Input:
+```text
+a
+a
+```
+  - Expected: `true`
+- **Hidden 2**:
+  - Input:
+```text
+ab
+a
+```
+  - Expected: `false`
+- **Hidden 3**:
+  - Input:
+```text
+aa
+bb
+```
+  - Expected: `false`
+- **Hidden 4**:
+  - Input:
+```text
+aacc
+cca
+```
+  - Expected: `false`
+- **Hidden 5**:
+  - Input:
+```text
+orchestra
+carthorse
+```
+  - Expected: `true`
 
 #### Starter Code Templates
 - **C++**:
@@ -550,24 +592,49 @@ if __name__ == '__main__':
 
 ---
 
-### Feature 2.2 — Edit an Existing Problem
+### Feature 2.2 — Edit an Existing Problem & Manage Test Cases
 
 1. While logged in as `setter` (or `admin`), navigate to `/admin` and select the **"Problems"** tab.
 2. In the search box, search `two-sum`.
-3. Click the **"Edit"** action button (or navigate directly to `/problems/two-sum/edit`).
-4. **Modifications**:
-   - Change **Time Limit (ms)** from `1000` to `500`.
-   - Scroll down to **Hidden Test Cases** and click **"+ Add Hidden Case"**.
-   - Input: `6\n10 20 30 40 50 60\n110`
-   - Expected Output: `4 5`
-5. Click **"Save Changes"**.
-6. **Verification**:
-   - Success toast appears: *"Problem updated successfully."*
-   - Return to `/problems/two-sum` and verify the time limit in the sidebar shows `500ms`.
+3. Click the **"Edit"** action button (or navigate directly to `/admin/problems/two-sum/edit`).
+4. **Sample Test Cases**:
+   - Add additional sample test cases by clicking **"+ Add Test Case"**.
+   - Fill in standard input (stdin), expected output (stdout), and optional explanations.
+5. **Hidden Test Cases Suite**:
+   - Expand the **"Hidden Evaluation Test Cases"** collapsible panel.
+   - Click **"+ Add Hidden Case"**.
+   - Input (stdin):
+```text
+6
+10 20 30 40 50 60
+110
+```
+   - Expected Output (stdout): `4 5`
+6. Click **"Save & Update Problem"**.
+7. **Verification**:
+   - Success banner appears: *"Problem updated successfully! Redirecting..."*
+   - Returns to `/problems/two-sum` and verifies that submissions evaluate against the full updated suite.
 
 ---
 
-### Feature 2.3 — Create a Contest Round
+### Feature 2.3 — Delete a Problem
+
+1. Log in as `admin` or `setter` (author of the problem).
+2. **Method A — From Admin/Setter Problems Table**:
+   - Navigate to `/admin` and switch to the **"Problems"** tab.
+   - Find the problem to remove (e.g., `valid-anagram`).
+   - Click the red **Trash icon (Delete)** button in the Actions column.
+   - Confirm the browser prompt: *"Are you sure you want to permanently delete '...'? This cannot be undone."*
+3. **Method B — From Edit Problem Page**:
+   - Navigate to `/admin/problems/:id/edit`.
+   - In the top action bar, click the **"Delete"** button with trash icon.
+   - Confirm the deletion prompt.
+4. **Verification**:
+   - Problem is immediately purged from the database and disappears from `/problems` and `/admin` problem lists.
+
+---
+
+### Feature 2.4 — Create a Contest Round
 
 1. Log in as `setter` or `admin`.
 2. Navigate to `/contests/create` (or click **"New Contest"** on the admin contests tab).

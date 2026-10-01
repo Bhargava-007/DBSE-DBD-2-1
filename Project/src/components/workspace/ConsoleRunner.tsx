@@ -10,8 +10,7 @@ import {
   XCircle, 
   Loader2, 
   ShieldAlert,
-  ChevronDown,
-  Sparkles
+  ChevronDown
 } from 'lucide-react';
 
 interface Props {
@@ -207,7 +206,7 @@ export const ConsoleRunner: React.FC<Props> = ({
                 {isSubmitting ? 'Evaluating against hidden test suite...' : 'Executing code on sandbox worker...'}
               </div>
               <div className="text-[var(--text-3)] text-xs font-mono mt-1">
-                ISOLATED DOCKER SANDBOX · RECURSION & MEMORY PROFILING ACTIVE
+                Evaluating...
               </div>
             </div>
           </div>
@@ -222,7 +221,7 @@ export const ConsoleRunner: React.FC<Props> = ({
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] pb-3.5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[var(--accent-dim)] border border-[var(--verdigris)]/40 flex items-center justify-center text-[var(--verdigris)]">
-                      <Sparkles className="w-4 h-4 text-[var(--verdigris)]" />
+                      <CheckCircle2 className="w-4 h-4 text-[var(--verdigris)]" />
                     </div>
                     <div>
                       <div className="text-xl font-bold text-[var(--verdigris)] tracking-tight flex items-center gap-2">

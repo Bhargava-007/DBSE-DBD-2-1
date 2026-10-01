@@ -111,7 +111,7 @@ export const ProblemCatalog: React.FC = () => {
 
       {/* Dismissible Error Banner */}
       {bannerError && (
-        <div className="flex items-center justify-between p-3.5 rounded-[var(--r-md)] bg-[var(--red-dim)] border border-[var(--red)]/30 text-xs text-[var(--red)] font-medium">
+        <div className="flex items-center justify-between p-3.5 rounded-[var(--r-md)] bg-[var(--red-dim)] border border-[var(--red-dim)] text-xs text-[var(--red)] font-medium">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{bannerError}</span>
@@ -295,14 +295,8 @@ export const ProblemCatalog: React.FC = () => {
                   </div>
 
                   {/* Acceptance */}
-                  <div className="text-right font-mono text-xs text-[var(--text-2)] tabular-nums pr-2 space-y-1">
-                    <div>{problem.acceptanceRate.toFixed(1)}%</div>
-                    <div className="w-12 h-1 rounded-full bg-[var(--ash)] border border-[var(--border)] ml-auto overflow-hidden">
-                      <div 
-                        className="h-full bg-[var(--verdigris)] rounded-full"
-                        style={{ width: `${Math.min(100, problem.acceptanceRate)}%` }}
-                      />
-                    </div>
+                  <div className="text-right pr-2">
+                    <span className="text-sm font-mono text-[var(--text-2)]">{problem.acceptanceRate.toFixed(1)}%</span>
                   </div>
 
                   {/* Difficulty */}

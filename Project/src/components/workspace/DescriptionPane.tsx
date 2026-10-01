@@ -3,12 +3,13 @@ import type { Problem, Submission } from '../../types/judge';
 import { VerdictBadge } from '../common/VerdictBadge';
 import { 
   History, 
-  Lightbulb, 
+  BookOpen, 
   HelpCircle,
   Clock, 
   Cpu, 
   Code2
 } from 'lucide-react';
+import { renderMarkdownToHtml } from '../../utils/markdownRenderer';
 
 interface Props {
   problem: Problem;
@@ -267,7 +268,7 @@ export const DescriptionPane: React.FC<Props> = ({
           <div className="space-y-5 font-sans">
             <div className="space-y-1 pb-3 border-b border-[var(--border)]">
               <h2 className="text-sm font-bold text-[var(--bone)] font-mono uppercase tracking-wider flex items-center gap-2">
-                <Lightbulb className="w-4 h-4 text-[var(--verdigris)]" />
+                <BookOpen className="w-4 h-4 text-[var(--verdigris)]" />
                 <span>Editorial & Complexity Analysis</span>
               </h2>
               <p className="text-xs text-[var(--text-2)]">
@@ -275,28 +276,14 @@ export const DescriptionPane: React.FC<Props> = ({
               </p>
             </div>
 
-            <div className="space-y-4 text-xs leading-relaxed text-[var(--text-2)]">
-              <div className="p-3.5 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)] space-y-2">
-                <h4 className="font-semibold text-[var(--bone)]">Approach & Invariants</h4>
-                <p>
-                  To solve <strong className="text-[var(--bone)]">{problem.title}</strong> within the {problem.timeLimitMs}ms ceiling, optimal approaches utilize hash tracking or divide-and-conquer to maintain deterministic linear time complexity.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 font-mono">
-                <div className="p-3 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
-                  <div className="text-[10px] uppercase text-[var(--text-3)] mb-1">Time Complexity</div>
-                  <div className="text-[var(--verdigris)] font-bold text-sm">O(N)</div>
-                  <div className="text-[10px] text-[var(--text-3)] mt-1">Single pass linear lookup</div>
-                </div>
-
-                <div className="p-3 rounded-[var(--r-sm)] bg-[var(--ash)] border border-[var(--border)]">
-                  <div className="text-[10px] uppercase text-[var(--text-3)] mb-1">Space Complexity</div>
-                  <div className="text-[var(--verdigris)] font-bold text-sm">O(N) / O(1)</div>
-                  <div className="text-[10px] text-[var(--text-3)] mt-1">Under the {problem.memoryLimitMb}MB limit</div>
-                </div>
-              </div>
-            </div>
+            {problem.editorial && problem.editorial.trim().length > 0 ? (
+              <div 
+                className="text-xs text-[var(--text-2)] leading-relaxed space-y-3 font-sans editorial-content"
+                dangerouslySetInnerHTML={{ __html: renderMarkdownToHtml(problem.editorial) }}
+              />
+            ) : (
+              <p className="text-sm text-[var(--text-3)]">Official editorial has not been published for this problem yet.</p>
+            )}
           </div>
         )}
 

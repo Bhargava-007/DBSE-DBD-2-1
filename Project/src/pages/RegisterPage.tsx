@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useJudge } from '../context/JudgeContext';
-import { Lock, Mail, User, ArrowRight } from 'lucide-react';
+import { Lock, Mail, User, ArrowRight, Loader2 } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const { registerUser, currentUser } = useJudge();
@@ -144,10 +144,13 @@ export const RegisterPage: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading}
-            className="btn-primary w-full justify-center !h-[38px] !text-[13px] mt-2"
+            className="btn-primary w-full justify-center !h-[38px] !text-[13px] mt-2 flex items-center gap-2"
           >
+            {isLoading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : null}
             <span>{isLoading ? 'Creating Account...' : 'Create Account'}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
           </button>
         </form>
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Problem, SupportedLanguage } from '../../types/judge';
 import { parseInput } from '../../utils/codeEvaluator';
 import { 
-  Zap, 
+  Activity, 
   Play, 
   RotateCcw, 
   Copy, 
@@ -276,6 +276,15 @@ export const StressTester: React.FC<Props> = ({
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
+  // Escape key listener
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
+
   // Sync defaults on problem change
   useEffect(() => {
     const newGen = detectGeneratorType(problem);
@@ -535,7 +544,7 @@ export const StressTester: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 font-sans animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--obsidian)]/80 backdrop-blur-sm p-2 sm:p-4 font-sans page-fade">
       <div 
         className={`w-full ${isExpanded ? 'max-w-7xl h-[94vh]' : 'max-w-5xl h-[86vh]'} flex flex-col rounded-[var(--r-lg)] bg-[var(--obsidian)] border border-[var(--border-strong)] shadow-[var(--shadow-lg)] overflow-hidden transition-all duration-200`}
       >
@@ -543,7 +552,7 @@ export const StressTester: React.FC<Props> = ({
         <div className="h-12 border-b border-[var(--border)] bg-[var(--carbon)] px-4 flex items-center justify-between shrink-0 font-mono text-xs select-none">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-md bg-[var(--accent-dim)] border border-[var(--accent-border)] flex items-center justify-center text-[var(--verdigris)]">
-              <Zap className="w-4 h-4 text-[var(--verdigris)]" />
+              <Activity className="w-4 h-4 text-[var(--verdigris)]" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -862,7 +871,7 @@ export const StressTester: React.FC<Props> = ({
                 {results.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-3 font-sans">
                     <div className="w-12 h-12 rounded-2xl bg-[var(--ash)] border border-[var(--border)] flex items-center justify-center text-[var(--text-3)]">
-                      <Zap className="w-6 h-6 text-[var(--verdigris)]" />
+                      <Activity className="w-6 h-6 text-[var(--verdigris)]" />
                     </div>
                     <div className="max-w-sm space-y-1">
                       <div className="text-sm font-semibold text-[var(--bone)]">Ready to Stress Test</div>
