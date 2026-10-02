@@ -1,0 +1,537 @@
+% ==============================================================================
+% AlgoFlow - Project Poster (KLH PBL Template)
+% Course: Database Systems Engineering and Distributed Backend Development (25CS1302E)
+% Institution: KLH Bachupally Campus, CSE | PBL 2026-27
+% ==============================================================================
+
+\documentclass[10pt]{article}
+
+% --- Core Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{helvet}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[paperwidth=210mm, paperheight=272mm, margin=5mm, top=5mm, bottom=5mm, left=5mm, right=5mm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage[skins,breakable]{tcolorbox}
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{enumitem}
+\usepackage{calc}
+\usepackage[hidelinks]{hyperref}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+
+% --- Color Palette (Exact Match to Poster Template) ---
+\definecolor{headerbg}{RGB}{62, 16, 134}      % Deep Indigo/Purple
+\definecolor{headersub}{RGB}{220, 200, 255}    % Light lilac subtitle text
+
+% Left Column Box Colors
+\definecolor{absframe}{RGB}{245, 158, 11}     % Amber/Orange
+\definecolor{absbg}{RGB}{254, 250, 240}       % Light Amber Tint
+\definecolor{abstitle}{RGB}{180, 83, 9}
+
+\definecolor{probframe}{RGB}{244, 63, 94}     % Rose/Pink
+\definecolor{probbg}{RGB}{255, 241, 242}      % Light Rose Tint
+\definecolor{probtitle}{RGB}{190, 18, 60}
+
+\definecolor{compframe}{RGB}{59, 130, 246}    % Blue
+\definecolor{compbg}{RGB}{239, 246, 255}      % Light Blue Tint
+\definecolor{comptitle}{RGB}{29, 78, 216}
+\definecolor{tblheader}{RGB}{29, 78, 216}
+
+\definecolor{feasframe}{RGB}{34, 197, 94}     % Green
+\definecolor{feasbg}{RGB}{240, 253, 244}      % Light Mint Tint
+\definecolor{feastitle}{RGB}{21, 128, 61}
+
+% Right Column Box Colors
+\definecolor{techframe}{RGB}{14, 165, 233}    % Cyan/Sky Blue
+\definecolor{techbg}{RGB}{240, 249, 255}      % Light Sky Tint
+\definecolor{techtitle}{RGB}{3, 105, 161}
+
+\definecolor{archframe}{RGB}{168, 85, 247}    % Purple
+\definecolor{archbg}{RGB}{250, 245, 255}      % Light Lavender Tint
+\definecolor{archtitle}{RGB}{126, 34, 206}
+
+\definecolor{erframe}{RGB}{251, 146, 60}      % Orange/Peach
+\definecolor{erbg}{RGB}{255, 247, 237}        % Light Peach Tint
+\definecolor{ertitle}{RGB}{194, 65, 12}
+
+\definecolor{screenframe}{RGB}{20, 184, 166}  % Teal
+\definecolor{screenbg}{RGB}{240, 253, 250}    % Light Teal Tint
+\definecolor{screentitle}{RGB}{15, 118, 110}
+
+% Bottom Row Colors
+\definecolor{testframe}{RGB}{239, 68, 68}     % Red
+\definecolor{testbg}{RGB}{255, 241, 242}      % Light Red Tint
+\definecolor{testtitle}{RGB}{185, 28, 28}
+
+\definecolor{concframe}{RGB}{132, 204, 22}    % Lime Green
+\definecolor{concbg}{RGB}{247, 254, 231}      % Light Lime Tint
+\definecolor{conctitle}{RGB}{77, 124, 15}
+
+\definecolor{futframe}{RGB}{192, 132, 252}    % Violet
+\definecolor{futbg}{RGB}{250, 245, 255}       % Light Violet Tint
+\definecolor{futtitle}{RGB}{147, 51, 234}
+
+% --- Bullet List Style ---
+\setlist[itemize]{leftmargin=9pt, labelsep=3pt, topsep=1pt, partopsep=0pt, parsep=0pt, itemsep=1.3pt}
+
+\begin{document}
+
+% ==============================================================================
+% 1. HEADER BANNER
+% ==============================================================================
+\begin{tcolorbox}[
+  enhanced,
+  colback=headerbg,
+  colframe=headerbg,
+  arc=1.5mm,
+  boxrule=0pt,
+  top=4pt, bottom=4pt, left=5pt, right=5pt
+]
+\begin{minipage}[c]{0.13\textwidth}
+  \begin{tcolorbox}[
+    enhanced,
+    colback=white,
+    colframe=white,
+    arc=1.2mm,
+    boxrule=0pt,
+    height=1.35cm,
+    valign=center,
+    halign=center,
+    top=1pt, bottom=1pt, left=2pt, right=2pt
+  ]
+    \IfFileExists{klh_logo.png}{%
+      \centering\includegraphics[width=\linewidth, height=1.25cm, keepaspectratio]{klh_logo.png}%
+    }{%
+      \centering
+      {\scriptsize\bfseries\color{gray!70} KLH Logo\par}
+      {\tiny\texttt{klh\_logo.png}\par}
+    }
+  \end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.85\textwidth}
+  {\fontsize{13.5}{15}\selectfont\bfseries\color{white} ONLINE CODE JUDGE -- ALGOFLOW}\\[2pt]
+  {\fontsize{7.4}{9}\selectfont\color{white}
+    \textbf{Team ID:} 19 \ \textbf{|} \ \textbf{Section:} S10 \ \textbf{|} \ 
+    \textbf{Members:} Bhargava Raaj Vamsi (2520060169), Hanish Kumar (2520090107), Sai Tarun (2520090020)
+  }\\[1.5pt]
+  {\fontsize{7.0}{8.5}\selectfont\color{headersub}
+    \textbf{Guide:} Dr. Divya Priya Degala \ \textbf{|} \ 
+    Database Systems Engineering and Distributed Backend Development (25CS1302E) \ \textbf{|} \ KLH Bachupally, CSE
+  }
+\end{minipage}
+\end{tcolorbox}
+
+\vspace{1.5mm}
+
+% ==============================================================================
+% 2. MAIN TWO-COLUMN BODY (EQUAL HEIGHT GRID ROWS)
+% ==============================================================================
+\begin{minipage}[t]{0.492\textwidth}
+
+  % --- ROW 1: Abstract Box ---
+  \begin{tcolorbox}[
+    equal height group=row1,
+    colback=absbg, colframe=absframe,
+    title={\textbf{\color{abstitle}Abstract}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=abstitle, colbacktitle=absbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.2}{8.6}\selectfont
+  \begin{itemize}
+    \item \textbf{Overview:} Online Code Judge -- AlgoFlow is an enterprise-grade code execution and contest platform with microservices architecture (React 19, Express, BullMQ, Redis, Docker, MongoDB 7).
+    \item \textbf{Execution:} Untrusted polyglot code (C++, Python, Java, JS) is evaluated inside hardened Docker sandboxes under strict Linux cgroup limits (256MB RAM, 50\% CPU, 50 PIDs).
+    \item \textbf{Outcome:} Delivers sub-millisecond execution telemetry, live ICPC tournament standings, and automated AST-based Winnowing plagiarism detection for campus assessments.
+  \end{itemize}
+  \end{tcolorbox}
+
+  \vspace{1.5mm}
+
+  % --- ROW 2: Problem Statement & Objectives ---
+  \begin{tcolorbox}[
+    equal height group=row2,
+    colback=probbg, colframe=probframe,
+    title={\textbf{\color{probtitle}Problem Statement \& Objectives}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=probtitle, colbacktitle=probbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.2}{8.6}\selectfont
+  \begin{itemize}
+    \item \textbf{Problem:} Campus coding platforms face security risks from unsafe local code execution, queue bottlenecks during exams, lack real-time scoreboards, and lack automated structural plagiarism checks.
+    \item \textbf{Objective 1:} Build hardened Docker container sandboxes with Linux cgroups for deterministic, isolated polyglot evaluation.
+    \item \textbf{Objective 2:} Implement asynchronous BullMQ task queues on Redis with $O(\log N)$ real-time ICPC leaderboards and WebSocket updates.
+    \item \textbf{Objective 3:} Integrate AST Winnowing plagiarism detection and dual-engine stress testing into a unified developer-friendly interface.
+    \item \textbf{Scope:} Contestants, Problem Setters, and Admins; C++20, Python 3.12, Java 21, JS runtimes; Live Contest \& Practice modes.
+  \end{itemize}
+  \end{tcolorbox}
+
+  \vspace{1.5mm}
+
+  % --- ROW 3: Existing vs Proposed System ---
+  \begin{tcolorbox}[
+    equal height group=row3,
+    colback=compbg, colframe=compframe,
+    title={\textbf{\color{comptitle}Existing vs Proposed System}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=comptitle, colbacktitle=compbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=2.5pt, bottom=2.5pt, left=2.5pt, right=2.5pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{6.8}{8.0}\selectfont
+  \renewcommand{\arraystretch}{1.14}
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabularx}{\linewidth}{|>{\raggedright\arraybackslash\bfseries}p{1.7cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
+    \hline
+    \rowcolor{tblheader}
+    \textcolor{white}{\textbf{Feature}} & \textcolor{white}{\textbf{Existing System}} & \textcolor{white}{\textbf{Proposed System}} \\ \hline
+    \textbf{Execution} & Host process; DoS / fork-bomb risk & Isolated Docker cgroup sandboxes \\ \hline
+    \textbf{Task Queue} & Synchronous HTTP; timeout bottlenecks & Async BullMQ worker pools on Redis \\ \hline
+    \textbf{Leaderboard} & Polled DB query ($O(N \log N)$ lag) & Sub-second Redis Sorted Sets ($ZSET$) \\ \hline
+    \textbf{Plagiarism} & Manual review / naive text matching & AST Tokenization + Winnowing hashes \\ \hline
+    \textbf{Architecture} & Fragile monolith; crashes at peak & Decoupled scalable microservices \\ \hline
+  \end{tabularx}
+  \end{tcolorbox}
+
+  \vspace{1.5mm}
+
+  % --- ROW 4: Feasibility Study ---
+  \begin{tcolorbox}[
+    equal height group=row4,
+    colback=feasbg, colframe=feasframe,
+    title={\textbf{\color{feastitle}Feasibility Study}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=feastitle, colbacktitle=feasbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.2}{8.6}\selectfont
+  \begin{itemize}
+    \item \textbf{Technical:} Implemented using battle-tested frameworks (React 19, Node.js/Express, Dockerode, BullMQ, Redis 7, MongoDB 7 ODM).
+    \item \textbf{Economic:} 100\% open-source stack with zero proprietary licensing costs; deployable on budget Linux cloud VPS or free-tier infrastructure.
+    \item \textbf{Operational:} Clean Monaco IDE, automated test suite runner, one-click contest workflows, and low administrative maintenance overhead.
+    \item \textbf{Schedule:} Delivered fully containerized microservices, comprehensive API, and 10 passed test suites on time within semester milestones.
+  \end{itemize}
+  \end{tcolorbox}
+
+\end{minipage}\hfill
+\begin{minipage}[t]{0.492\textwidth}
+
+  % --- ROW 1: Tools & Technologies ---
+  \begin{tcolorbox}[
+    equal height group=row1,
+    colback=techbg, colframe=techframe,
+    title={\textbf{\color{techtitle}Tools \& Technologies}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=techtitle, colbacktitle=techbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.2}{8.6}\selectfont
+  \begin{itemize}
+    \item \textbf{Front-End:} React 19, TypeScript, Vite 8, Tailwind CSS, Monaco Editor, Lucide Icons.
+    \item \textbf{Back-End:} Node.js 20 LTS, Express 4, TypeScript, BullMQ, Dockerode, Zod, Socket.IO.
+    \item \textbf{Database \& Cache:} MongoDB 7.0 (Mongoose ODM), Redis 7.0 (Broker \& ZSET).
+    \item \textbf{DevOps \& Tools:} Docker \& Compose, Git/GitHub, Postman v10, VS Code, RedisInsight.
+  \end{itemize}
+  \end{tcolorbox}
+
+  \vspace{1.5mm}
+
+  % --- ROW 2: System Architecture ---
+  \begin{tcolorbox}[
+    equal height group=row2,
+    colback=archbg, colframe=archframe,
+    title={\textbf{\color{archtitle}System Architecture}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=archtitle, colbacktitle=archbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=3pt, right=3pt, toptitle=1pt, bottomtitle=1pt,
+    valign=center
+  ]
+  \IfFileExists{fig_architecture.png}{%
+    \begin{tcolorbox}[
+      enhanced,
+      colback=white,
+      colframe=archframe!30,
+      boxrule=0.5pt,
+      arc=1mm,
+      height=3.85cm,
+      valign=center,
+      halign=center,
+      top=1pt, bottom=1pt, left=1pt, right=1pt
+    ]
+      \centering\includegraphics[width=\linewidth, height=3.75cm, keepaspectratio]{fig_architecture.png}%
+    \end{tcolorbox}%
+  }{%
+    \begin{tcolorbox}[
+      enhanced,
+      colback=white,
+      colframe=archframe,
+      boxrule=0.7pt,
+      borderline={0.7pt}{0pt}{archframe, dashed},
+      arc=1mm,
+      height=3.85cm,
+      valign=center,
+      halign=center,
+      top=4pt, bottom=4pt, left=2pt, right=2pt
+    ]
+      \centering
+      {\scriptsize\bfseries\color{archtitle} [System Architecture: React $\to$ API Gateway $\to$ Redis/BullMQ $\to$ Docker Sandboxes $\to$ MongoDB]\par}
+      \vspace{2pt}
+      {\tiny\texttt{fig\_architecture.png}\par}
+    \end{tcolorbox}%
+  }
+  \end{tcolorbox}
+
+  \vspace{1.5mm}
+
+  % --- ROW 3: ER Diagram & Database Design ---
+  \begin{tcolorbox}[
+    equal height group=row3,
+    colback=erbg, colframe=erframe,
+    title={\textbf{\color{ertitle}ER Diagram \& Database Design}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=ertitle, colbacktitle=erbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=3pt, right=3pt, toptitle=1pt, bottomtitle=1pt,
+    valign=center
+  ]
+  \IfFileExists{fig_er_diagram.png}{%
+    \begin{tcolorbox}[
+      enhanced,
+      colback=white,
+      colframe=erframe!30,
+      boxrule=0.5pt,
+      arc=1mm,
+      height=3.65cm,
+      valign=center,
+      halign=center,
+      top=1pt, bottom=1pt, left=1pt, right=1pt
+    ]
+      \centering\includegraphics[width=\linewidth, height=3.55cm, keepaspectratio]{fig_er_diagram.png}%
+    \end{tcolorbox}%
+  }{%
+    \begin{tcolorbox}[
+      enhanced,
+      colback=white,
+      colframe=erframe,
+      boxrule=0.7pt,
+      borderline={0.7pt}{0pt}{erframe, dashed},
+      arc=1mm,
+      height=3.65cm,
+      valign=center,
+      halign=center,
+      top=4pt, bottom=4pt, left=2pt, right=2pt
+    ]
+      \centering
+      {\scriptsize\bfseries\color{ertitle} [ER Diagram: Users, Problems, Submissions, Contests, Plagiarism Reports]\par}
+      \vspace{2pt}
+      {\tiny\texttt{fig\_er\_diagram.png}\par}
+    \end{tcolorbox}%
+  }
+  \end{tcolorbox}
+
+  \vspace{1.5mm}
+
+  % --- ROW 4: Implementation Screenshots ---
+  \begin{tcolorbox}[
+    equal height group=row4,
+    colback=screenbg, colframe=screenframe,
+    title={\textbf{\color{screentitle}Implementation Screenshots}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=screentitle, colbacktitle=screenbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=3pt, right=3pt, toptitle=1pt, bottomtitle=1pt,
+    valign=center
+  ]
+  \begin{minipage}[c]{0.485\linewidth}
+    \IfFileExists{screenshot1.png}{%
+      \begin{tcolorbox}[
+        enhanced,
+        colback=white,
+        colframe=screenframe!30,
+        boxrule=0.5pt,
+        arc=1mm,
+        height=3.1cm,
+        valign=center,
+        halign=center,
+        top=1pt, bottom=1pt, left=1pt, right=1pt
+      ]
+        \centering\includegraphics[width=\linewidth, height=3.0cm, keepaspectratio]{screenshot1.png}%
+      \end{tcolorbox}%
+    }{%
+      \begin{tcolorbox}[
+        enhanced,
+        colback=white,
+        colframe=screenframe,
+        boxrule=0.7pt,
+        borderline={0.7pt}{0pt}{screenframe, dashed},
+        arc=1mm,
+        height=3.1cm,
+        valign=center,
+        halign=center,
+        top=4pt, bottom=4pt, left=2pt, right=2pt
+      ]
+        \centering
+        {\scriptsize\bfseries\color{screentitle} [Screenshot 1: Problem Workspace \& Monaco IDE]\par}
+        \vspace{2pt}
+        {\tiny\texttt{screenshot1.png}\par}
+      \end{tcolorbox}%
+    }%
+  \end{minipage}\hfill
+  \begin{minipage}[c]{0.485\linewidth}
+    \IfFileExists{screenshot2.png}{%
+      \begin{tcolorbox}[
+        enhanced,
+        colback=white,
+        colframe=screenframe!30,
+        boxrule=0.5pt,
+        arc=1mm,
+        height=3.1cm,
+        valign=center,
+        halign=center,
+        top=1pt, bottom=1pt, left=1pt, right=1pt
+      ]
+        \centering\includegraphics[width=\linewidth, height=3.0cm, keepaspectratio]{screenshot2.png}%
+      \end{tcolorbox}%
+    }{%
+      \begin{tcolorbox}[
+        enhanced,
+        colback=white,
+        colframe=screenframe,
+        boxrule=0.7pt,
+        borderline={0.7pt}{0pt}{screenframe, dashed},
+        arc=1mm,
+        height=3.1cm,
+        valign=center,
+        halign=center,
+        top=4pt, bottom=4pt, left=2pt, right=2pt
+      ]
+        \centering
+        {\scriptsize\bfseries\color{screentitle} [Screenshot 2: Live Contest Arena \& Leaderboard]\par}
+        \vspace{2pt}
+        {\tiny\texttt{screenshot2.png}\par}
+      \end{tcolorbox}%
+    }%
+  \end{minipage}
+  \end{tcolorbox}
+
+\end{minipage}
+
+\vspace{1.8mm}
+
+% ==============================================================================
+% 3. BOTTOM ROW: THREE COLUMNS (EQUAL HEIGHT GROUP)
+% ==============================================================================
+\begin{minipage}[t]{0.324\textwidth}
+  \begin{tcolorbox}[
+    equal height group=bottomgroup,
+    colback=testbg, colframe=testframe,
+    title={\textbf{\color{testtitle}Results \& Testing}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=testtitle, colbacktitle=testbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.0}{8.3}\selectfont
+  \begin{itemize}
+    \item 100\% test pass rate across 10 extensive test suites (Auth, Catalog, Queue, Sandboxing, Leaderboard, Plagiarism).
+    \item Verified verdicts: AC (2.1ms), TLE (1000ms cut), MLE (cgroup limit), CE (stderr trace), RE.
+    \item 94.2\% similarity score detected on plagiarized code pairs.
+  \end{itemize}
+  \end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.324\textwidth}
+  \begin{tcolorbox}[
+    equal height group=bottomgroup,
+    colback=concbg, colframe=concframe,
+    title={\textbf{\color{conctitle}Conclusion}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=conctitle, colbacktitle=concbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.0}{8.3}\selectfont
+  \begin{itemize}
+    \item Successfully engineered a microservices-based distributed judge platform isolating untrusted polyglot code execution.
+    \item Real-time ICPC tournament standings with sub-second latency and zero-lag WebSocket broadcasts.
+    \item Provides comprehensive pedagogical visualizers and automated integrity scanning for university exams.
+  \end{itemize}
+  \end{tcolorbox}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.324\textwidth}
+  \begin{tcolorbox}[
+    equal height group=bottomgroup,
+    colback=futbg, colframe=futframe,
+    title={\textbf{\color{futtitle}Future Scope}},
+    fonttitle=\fontsize{8.5}{10}\selectfont,
+    coltitle=futtitle, colbacktitle=futbg,
+    boxrule=0.7pt, arc=1.5mm,
+    top=3pt, bottom=3pt, left=4pt, right=4pt, toptitle=1pt, bottomtitle=1pt
+  ]
+  \fontsize{7.0}{8.3}\selectfont
+  \begin{itemize}
+    \item \textbf{Languages:} Add Rust, Go, Kotlin, and PyPy3 compiler sandboxes.
+    \item \textbf{Collaboration:} WebRTC real-time pair programming rooms.
+    \item \textbf{Autoscaling:} Kubernetes (HPA) worker clusters based on BullMQ queue depth.
+    \item \textbf{AI Hints:} LLM-driven progressive hints and complexity feedback.
+  \end{itemize}
+  \end{tcolorbox}
+\end{minipage}
+
+\vspace{1.8mm}
+
+% ==============================================================================
+% 4. FOOTER: REFERENCES & QR CODE
+% ==============================================================================
+\noindent
+\begin{minipage}[c]{0.85\textwidth}
+  \fontsize{6.5}{8.0}\selectfont
+  \textbf{References:} 
+  \textbf{[1]} React 19 \& Node.js v20 LTS Docs (2024) \quad
+  \textbf{[2]} Docker Engine Security \& Cgroups Model (2024) \quad
+  \textbf{[3]} BullMQ \& Redis In-Memory Architecture (2024)
+\end{minipage}\hfill
+\begin{minipage}[c]{0.14\textwidth}
+  \centering
+  \IfFileExists{qr_github.png}{%
+    \begin{tcolorbox}[
+      colback=white,
+      colframe=gray!40,
+      boxrule=0.5pt,
+      arc=1mm,
+      height=0.9cm,
+      valign=center,
+      halign=center,
+      top=1pt, bottom=1pt, left=1pt, right=1pt
+    ]
+      \centering\includegraphics[width=0.8cm, height=0.8cm, keepaspectratio]{qr_github.png}%
+    \end{tcolorbox}%
+  }{%
+    \begin{tcolorbox}[
+      colback=white,
+      colframe=gray!40,
+      boxrule=0.5pt,
+      arc=1mm,
+      height=0.85cm,
+      valign=center,
+      halign=center,
+      top=1pt, bottom=1pt, left=1pt, right=1pt
+    ]
+      \centering
+      {\tiny\bfseries\color{gray!80} QR: GitHub\par}
+      {\fontsize{3.8}{4.5}\selectfont\texttt{qr\_github.png}\par}
+    \end{tcolorbox}%
+  }
+\end{minipage}
+
+\end{document}
