@@ -20,6 +20,7 @@ DBSE-DBD-2-1
 │
 ├── 2520090169_Documents
 │   ├── 2520090169_ProjectDocumentation.pdf
+│   ├── DBSE_Poster.pdf
 │   ├── Review 0.pdf
 │   ├── Review 1.pdf
 │   ├── Review 2.pdf
