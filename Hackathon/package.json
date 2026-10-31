@@ -1,0 +1,19 @@
+{
+  "name": "supportdesk-platform",
+  "version": "1.0.0",
+  "description": "Minimal, professional customer support ticketing platform with keyword classifier and SLA worker",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"classifier,server,worker,client\" -c \"magenta,blue,yellow,cyan\" \"npm run dev:classifier\" \"npm run dev:server\" \"npm run dev:worker\" \"npm run dev:client\"",
+    "dev:classifier": "python -m uvicorn main:app --host 127.0.0.1 --port 8000 --app-dir classifier",
+    "dev:server": "node server/src/index.js",
+    "dev:worker": "node worker/src/index.js",
+    "dev:client": "npm --prefix client run dev",
+    "seed": "node server/scripts/seed.js",
+    "seed:clear": "node server/scripts/clear.js",
+    "install:all": "npm install && npm --prefix server install && npm --prefix worker install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
