@@ -13,3 +13,4 @@ export default function Skeleton({ className = 'h-4 w-full', count = 1 }) {
     </div>
   );
 }
+

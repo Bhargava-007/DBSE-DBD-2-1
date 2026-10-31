@@ -36,3 +36,4 @@ const customerSchema = new mongoose.Schema(
 customerSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Customer', customerSchema);
+

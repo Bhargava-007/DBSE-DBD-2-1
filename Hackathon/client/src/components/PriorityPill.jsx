@@ -40,3 +40,4 @@ export default function PriorityPill({ priority = 'medium' }) {
     </span>
   );
 }
+

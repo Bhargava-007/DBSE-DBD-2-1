@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Search, ChevronRight } from 'lucide-react';
+import { Plus, Search, ChevronRight, Bot } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import StatusPill from '../components/StatusPill';
@@ -78,46 +78,55 @@ export default function CustomerPortalPage() {
       ) : (
         <div className="bg-white border border-gray-200 rounded-md overflow-hidden">
           <div className="divide-y divide-gray-100">
-            {tickets.map((t) => (
-              <div
-                key={t._id}
-                onClick={() => navigate(`/tickets/${t.ticketId}`)}
-                className="p-4 hover:bg-gray-50/70 cursor-pointer transition-colors flex items-center justify-between gap-4 group"
-              >
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-medium text-gray-900">
-                      {t.ticketId}
-                    </span>
-                    <PriorityPill priority={t.priority} />
-                    <StatusPill status={t.status} />
+            {tickets.map((t) => {
+              const hasBotReply = t.messages?.some((m) => m.authorType === 'bot');
+              return (
+                <div
+                  key={t._id}
+                  onClick={() => navigate(`/tickets/${t.ticketId}`)}
+                  className="p-4 hover:bg-gray-50/70 cursor-pointer transition-colors flex items-center justify-between gap-4 group"
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-medium text-gray-900">
+                        {t.ticketId}
+                      </span>
+                      <PriorityPill priority={t.priority} />
+                      <StatusPill status={t.status} />
+                      {hasBotReply && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.2 rounded font-normal">
+                          <Bot className="w-3 h-3 text-gray-400" />
+                          <span>Auto-replied</span>
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 truncate transition-colors">
+                      {t.subject}
+                    </h3>
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      <span>
+                        Created <RelativeTime date={t.createdAt} />
+                      </span>
+                      <span>•</span>
+                      <span>
+                        {t.messages?.length || 1} message{t.messages?.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 truncate transition-colors">
-                    {t.subject}
-                  </h3>
-                  <div className="flex items-center gap-3 text-xs text-gray-400">
-                    <span>
-                      Created <RelativeTime date={t.createdAt} />
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {t.messages?.length || 1} message{t.messages?.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-3 shrink-0">
-                  <div className="text-right hidden sm:block">
-                    <SlaCountdown
-                      slaDueAt={t.slaDueAt}
-                      slaBreached={t.slaBreached}
-                      status={t.status}
-                    />
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <SlaCountdown
+                        slaDueAt={t.slaDueAt}
+                        slaBreached={t.slaBreached}
+                        status={t.status}
+                      />
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-600 transition-colors" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-600 transition-colors" />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -130,3 +139,4 @@ export default function CustomerPortalPage() {
     </div>
   );
 }
+

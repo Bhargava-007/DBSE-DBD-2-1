@@ -7,7 +7,7 @@ const messageSchema = new mongoose.Schema({
   },
   authorType: {
     type: String,
-    enum: ['customer', 'agent', 'system'],
+    enum: ['customer', 'agent', 'system', 'bot'],
     required: true,
   },
   body: {
@@ -119,3 +119,4 @@ ticketSchema.index({ customer: 1 });
 ticketSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Ticket', ticketSchema);
+

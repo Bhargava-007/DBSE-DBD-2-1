@@ -15,3 +15,4 @@ counterSchema.statics.getNextSequence = async function (name) {
 };
 
 module.exports = mongoose.model('Counter', counterSchema);
+

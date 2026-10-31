@@ -118,3 +118,4 @@ function classifyLocally(subject = '', description = '') {
 }
 
 module.exports = { classifyLocally };
+

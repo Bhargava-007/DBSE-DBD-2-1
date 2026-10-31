@@ -112,3 +112,4 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, onOpenNewTicket }
     </aside>
   );
 }
+

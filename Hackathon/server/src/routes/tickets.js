@@ -6,6 +6,7 @@ const Agent = require('../models/Agent');
 const Counter = require('../models/Counter');
 const SlaPolicy = require('../models/SlaPolicy');
 const { classifyLocally } = require('../utils/classifier');
+const { autoReply } = require('../services/autoReply');
 
 const SLA_DURATIONS = {
   urgent: 60,
@@ -251,6 +252,18 @@ router.post('/', async (req, res, next) => {
       .populate('customer', 'name email company')
       .populate('assignedAgent', 'name email role');
 
+    // Trigger delayed auto-reply for created event (1.5s delay so client sees typing state)
+    setTimeout(async () => {
+      try {
+        const freshTicket = await Ticket.findById(ticket._id).populate('customer');
+        if (freshTicket) {
+          await autoReply(freshTicket, 'created');
+        }
+      } catch (err) {
+        console.error('Error sending auto-reply on created:', err);
+      }
+    }, 1500);
+
     res.status(201).json(populated);
   } catch (err) {
     next(err);
@@ -340,6 +353,17 @@ router.patch('/:id', async (req, res, next) => {
     if (hasChanged) {
       ticket.updatedAt = new Date();
       await ticket.save();
+
+      // Trigger auto-replies for status or assignment changes (unless demo-seeded ticket)
+      if (status && ['in_progress', 'waiting', 'resolved', 'closed'].includes(status)) {
+        await autoReply(ticket, status);
+      }
+      if (assignedAgent !== undefined && ticket.assignedAgent) {
+        const assignedAgentDoc = await Agent.findById(ticket.assignedAgent);
+        if (assignedAgentDoc) {
+          await autoReply(ticket, 'assigned', { agent: assignedAgentDoc.name });
+        }
+      }
     }
 
     const updated = await Ticket.findById(ticket._id)
@@ -386,8 +410,20 @@ router.post('/:id/messages', async (req, res, next) => {
       at: new Date(),
     });
 
-    // If ticket was waiting and customer replies, bump to open
-    if (authorType === 'customer' && ticket.status === 'waiting') {
+    // If customer replies on a resolved/closed ticket: reopen ticket and send auto-reply
+    let wasClosedOrResolved = false;
+    if (authorType === 'customer' && ['resolved', 'closed'].includes(ticket.status)) {
+      wasClosedOrResolved = true;
+      const prevStatus = ticket.status;
+      ticket.status = 'open';
+      ticket.history.push({
+        action: 'status_changed',
+        from: prevStatus,
+        to: 'open',
+        by: 'Reopened by customer',
+        at: new Date(),
+      });
+    } else if (authorType === 'customer' && ticket.status === 'waiting') {
       ticket.history.push({
         action: 'status_changed',
         from: 'waiting',
@@ -401,6 +437,10 @@ router.post('/:id/messages', async (req, res, next) => {
     ticket.updatedAt = new Date();
     await ticket.save();
 
+    if (wasClosedOrResolved) {
+      await autoReply(ticket, 'reopened');
+    }
+
     const updated = await Ticket.findById(ticket._id)
       .populate('customer', 'name email company')
       .populate('assignedAgent', 'name email role');
@@ -412,3 +452,4 @@ router.post('/:id/messages', async (req, res, next) => {
 });
 
 module.exports = router;
+

@@ -15,6 +15,7 @@ import {
   MessageSquare,
   ArrowRight,
   Loader2,
+  Bot,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -38,8 +39,51 @@ export default function TicketDetailPage() {
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
   const [suggestedReply, setSuggestedReply] = useState('');
   const [isClassifying, setIsClassifying] = useState(false);
+  const [isAssistantTyping, setIsAssistantTyping] = useState(false);
 
   const messagesEndRef = useRef(null);
+
+  // Check if ticket needs to show assistant typing / polling for initial bot auto-reply
+  useEffect(() => {
+    if (!ticket) return;
+    const hasBotReply = ticket.messages?.some((m) => m.authorType === 'bot');
+    const ageSeconds = (Date.now() - new Date(ticket.createdAt).getTime()) / 1000;
+
+    // If ticket was created less than 45 seconds ago and no bot reply yet
+    if (!hasBotReply && ageSeconds < 45) {
+      setIsAssistantTyping(true);
+
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/tickets/${id}`);
+          if (res.ok) {
+            const freshData = await res.json();
+            const foundBot = freshData.messages?.some((m) => m.authorType === 'bot');
+            if (foundBot) {
+              setTicket(freshData);
+              setIsAssistantTyping(false);
+              clearInterval(pollInterval);
+            }
+          }
+        } catch (e) {
+          // ignore polling errors
+        }
+      }, 2000);
+
+      // Timeout typing indicator after 8s if no bot reply
+      const stopTimer = setTimeout(() => {
+        setIsAssistantTyping(false);
+        clearInterval(pollInterval);
+      }, 8000);
+
+      return () => {
+        clearInterval(pollInterval);
+        clearTimeout(stopTimer);
+      };
+    } else {
+      setIsAssistantTyping(false);
+    }
+  }, [ticket?._id, id]);
 
   // Fetch ticket details
   const fetchTicket = useCallback(async () => {
@@ -223,7 +267,32 @@ export default function TicketDetailPage() {
 
             <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
               {ticket.messages?.map((msg, index) => {
+                const isBot = msg.authorType === 'bot';
                 const isMsgCustomer = msg.authorType === 'customer';
+
+                if (isBot) {
+                  return (
+                    <div
+                      key={index}
+                      className="p-4 rounded-md border border-gray-200 bg-gray-50/80 text-xs space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bot className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                          <span className="font-medium text-gray-900">Support Assistant</span>
+                          <span className="text-[10px] px-1.5 py-0.2 rounded font-normal bg-gray-100 border border-gray-200 text-gray-500">
+                            Automated
+                          </span>
+                        </div>
+                        <RelativeTime date={msg.createdAt} />
+                      </div>
+                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                        {msg.body}
+                      </p>
+                    </div>
+                  );
+                }
+
                 return (
                   <div
                     key={index}
@@ -254,6 +323,20 @@ export default function TicketDetailPage() {
                   </div>
                 );
               })}
+
+              {/* Typing indicator */}
+              {isAssistantTyping && (
+                <div className="flex items-center gap-2 px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-md text-xs text-gray-500 animate-in fade-in">
+                  <Bot className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                  <span>Support Assistant is typing</span>
+                  <span className="flex items-center gap-1 ml-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           </div>
@@ -480,3 +563,4 @@ export default function TicketDetailPage() {
     </div>
   );
 }
+

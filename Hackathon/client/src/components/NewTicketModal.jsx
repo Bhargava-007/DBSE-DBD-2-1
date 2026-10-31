@@ -132,7 +132,7 @@ export default function NewTicketModal({ isOpen, onClose, onTicketCreated }) {
       }
 
       const created = await res.json();
-      addToast(`Ticket ${created.ticketId} created successfully`, 'success');
+      addToast("Ticket created. You'll get an automatic confirmation shortly.", 'success');
 
       // Reset
       setSubject('');
@@ -323,3 +323,4 @@ export default function NewTicketModal({ isOpen, onClose, onTicketCreated }) {
     </div>
   );
 }
+

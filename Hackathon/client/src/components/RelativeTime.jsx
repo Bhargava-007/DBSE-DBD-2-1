@@ -13,3 +13,4 @@ export default function RelativeTime({ date, className = 'text-xs text-gray-400'
     </time>
   );
 }
+

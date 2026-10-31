@@ -23,3 +23,4 @@ const slaPolicySchema = new mongoose.Schema(
 );
 
 module.exports = mongoose.model('SlaPolicy', slaPolicySchema);
+

@@ -124,3 +124,4 @@ export default function TopBar({ onSearch, searchValue = '' }) {
     </header>
   );
 }
+
